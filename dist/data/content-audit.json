@@ -1,0 +1,59 @@
+{
+  "version": "1.4",
+  "species": [
+    "dog"
+  ],
+  "authoredBehaviorTemplates": 53,
+  "newThreeActionTemplates": 16,
+  "behaviorOptions": 122,
+  "categories": [
+    "growth",
+    "learning",
+    "play",
+    "food",
+    "body",
+    "fear",
+    "family",
+    "separation",
+    "travel",
+    "exploration",
+    "care",
+    "survival",
+    "aging",
+    "routine",
+    "communication",
+    "weather",
+    "space",
+    "shelter",
+    "relationship"
+  ],
+  "target": 1100,
+  "targetReached": false,
+  "structuralErrors": [],
+  "semanticReview": "All new situations own their action/outcome sets. Human semantic review of the complete legacy catalog and real mobile visual QA remain incomplete.",
+  "familyArcs": [
+    "companion bond",
+    "shared home",
+    "reproductive access",
+    "pregnancy",
+    "birth",
+    "parent care",
+    "offspring development",
+    "departure",
+    "conditional reunion"
+  ],
+  "familySource": "merck-reproduction",
+  "biologySource": "merck-development",
+  "statistics": "UK life-table reference only; no country birth/adoption measurements applied",
+  "notImplemented": [
+    "other species",
+    "country-specific measured birth/adoption hazards",
+    "1100 curated templates",
+    "real mobile browser QA"
+  ],
+  "contextualSituations": 16,
+  "contextualActions": 34,
+  "branchingExperienceThreads": 8,
+  "clinicalConditionKinds": 8,
+  "qualityCoverage": "1000 complete lives; first/last/weighted action policies; exact prompt repetition; new situation condition/action matrix"
+}
