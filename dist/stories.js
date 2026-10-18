@@ -1,3 +1,6 @@
+import{familiarRoutine,chooseRoutineAction,autonomousRoutine}from './routine-memory.js';
+import{decisionSemantics}from './event-semantics.js';
+import{resolveSocialScene,socialMeetingAvailable}from './neighbors.js';
 import{returnKnownHome}from './custody.js';
 import{contextualGrowth,initWorld,syncContext}from './world.js';
 import{initSocial,changeArea,canMeetFriend,friendPrompt,meetFriend}from './social.js';
@@ -21,8 +24,16 @@ if(t.careUntil&&t.careUntil<=s.day&&t.care==='reduced'){t.care='normal';log(s,'c
 if(t.lost){if(s.custody?.intake&&['checking','contact','waiting'].includes(s.custody.intake.stage))return true;const elapsed=s.day-t.lostAt;if(elapsed>=60){t.lost=false;t.longSeparated=true;t.returnHome=null;s.home='street';changeArea(s,'long-separation');syncContext(s);log(s,'lost-long-separation','익숙한 사람이 돌아오지 않은 채 여러 주가 지났다. 새로 물을 찾고 쉬던 길이 생활 범위가 됐다. 예전 가족의 상태는 알 수 없고, 지금 머무는 구역에서 하루를 이어 간다.');remember(s,'long-separation');return true}if(!s.pending&&s.day>=(t.nextSearch??t.lostAt+3)){if((t.searches||0)>=3){t.nextSearch=s.day+14;log(s,'lost-searching','며칠 동안 머물던 길과 쉬던 자리를 오간다. 아직 익숙한 사람과 만나지는 못했다. 물과 마른 잠자리를 찾으며 같은 구역 안에 머문다.');return true}const stages=[['골목 모퉁이에서 발소리가 멈춘다. 처음 지나온 방향과 마른 처마 아래가 모두 보인다.','마지막으로 익숙했던 자리 가까이 머문다','차가 없는 골목 안쪽을 짧게 살핀다'],['며칠째 머문 구역에서 사람이 천천히 둘러본다. 몸을 낮추고 있는 자리에서 그 움직임을 볼 수 있다.','멀리 움직이지 않고 눈에 보이는 곳에 머문다','사람과 거리를 두고 같은 구역을 돌아본다'],['처음 왔던 길 쪽에서 발소리와 부르는 소리가 들린다. 소리가 난 방향과 지금 쉬는 자리 사이에 빈 길이 있다.','탁 트인 쪽에 서서 발소리를 기다린다','붐비지 않는 길로 움직임을 살핀다']];const scene=stages[Math.min(2,t.searches||0)];decision(s,'lost-help',scene[0],[['wait',scene[1]],['search',scene[2]]]);}return true;}
 if(s.pending||s.day<90)return false;
 initWorld(s);const cal=s.worldModel.calendar;
-if(s.day>=cal.friend&&canMeetFriend(s)&&s.friend.meetings>=6&&s.friend.meetings%3!==0){cal.friend=s.day+100+Math.floor(random(s)*100);const scene=friendPrompt(s);if(scene.options.length>=2)meetFriend(s,scene.options[0][0],log,remember,clamp);else log(s,'companion-absent',scene.text);}
-const roll=random(s);if(s.day>=cal.friend&&canMeetFriend(s)&&(s.friend.meetings<6||s.friend.meetings%3===0)){cal.friend=s.day+70+Math.floor(random(s)*80);const p=friendPrompt(s);if(p.options.length<2){log(s,'companion-absent',p.text);return true}const actor=s.neighborhood.animals.find(a=>a.id===s.friend.id);actor.asked??={};const key=s.currentEncounter.purpose;if(actor.asked[key]){meetFriend(s,p.options[s.stress>65?p.options.length-1:0][0],log,remember,clamp);return true}actor.asked[key]=s.day;decision(s,'dog-meet',p.text,p.options);return true}
+if(s.day>=cal.friend&&canMeetFriend(s)){
+ if(!socialMeetingAvailable(s)){cal.friend=s.day+14;}else{
+ cal.friend=s.day+70+Math.floor(random(s)*80);const scene=friendPrompt(s);
+ if(scene.options.length<2){log(s,'companion-absent',scene.text);return true}
+ const semantic=decisionSemantics(s,'dog-meet',scene.options),context={actor:s.currentEncounter.actorId,area:s.areaId,place:s.currentEncounter.place,cause:'dog-'+s.currentEncounter.purpose,memoryDomain:'canine-social',semantic};
+ const p={id:'dog-meet',text:scene.text,options:scene.options.map(([id,text])=>({id,text})),semantic,context};
+ if(familiarRoutine(s,p)){autonomousRoutine(s,p,chooseRoutineAction(s,p),id=>resolveSocialScene(s,id,log,remember,clamp));return true;}
+ if(decision(s,p.id,p.text,scene.options,context)){const a=s.neighborhood.animals.find(a=>a.id===s.currentEncounter.actorId);a.asked??={};a.asked[s.currentEncounter.purpose]=s.day;}return true;
+ }}
+const roll=random(s);
 if(s.home==='family'){
 if(s.day>365&&!t.moved&&roll<0.0012){decision(s,'move-house','상자들이 쌓였다. 익숙한 물건들이 낯선 방으로 옮겨졌다.',[['blanket','내 담요의 냄새를 찾는다'],['watch','문가에서 주변을 살핀다']]);return true}
 if(s.day>300&&!t.reunited&&roll>0.7&&random(s)<0.001&&!(s.storyCounts['open-gate'])){decision(s,'open-gate','문이 잠깐 열렸다. 낯선 냄새가 바람을 타고 들어온다.',[['stay','익숙한 사람 곁에 머문다'],['explore','문밖 냄새를 따라간다']]);return true}

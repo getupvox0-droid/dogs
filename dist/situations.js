@@ -1,7 +1,7 @@
 import{mix}from './world.js';
 import{memoryBias,motives}from './behavior.js';
 import{recordExperience}from './life-state.js';
-import{meaningAllowed,learnedResponse,familiarSituation,learnResponse,semanticKey,validSemanticMeta}from './event-semantics.js';
+import{diverseRoutine,meaningAllowed,learnedResponse,familiarSituation,learnResponse,semanticKey,validSemanticMeta}from './event-semantics.js';
 const clamp=n=>Math.max(0,Math.min(100,n));
 const carer=s=>s.humans?.find(h=>h.id===s.caregiverId&&h.area===s.areaId);
 const sibling=s=>s.relations?.find(r=>r.kind==='sibling'&&r.active&&r.area===s.areaId);
@@ -39,7 +39,7 @@ const state=initSituations(s);state.followups.push({id:storyId,start:s.day,due:s
 export function situationStep(s,{log,decision,remember}){const t=initSituations(s);for(const f of t.followups){if(f.status!=='waiting'||s.day<f.due)continue;const d=SITUATIONS.find(d=>d.id===f.kind);if(s.areaId!==f.area||s.story.lost||!actorExists(s,d,f.actor)){f.status='closed';continue;}if(s.medical.episode||s.clinical.active)continue;f.status='complete';s.comfort=clamp(s.comfort+1);log(s,'composed-followup',f.text);Object.assign(s.log.at(-1),{storyId:f.id,actorId:f.actor,cause:f.kind,purpose:f.goal,placeLabel:s.worldModel.context.label});return true;}
 if(s.pending||s.day<t.next||s.medical.episode||s.clinical.active)return false;
 const pool=SITUATIONS.map(d=>composeSituation(s,d)).filter(p=>p&&s.day-(t.seen[p.context.cause]??-1000)>=90&&(familiarSituation(s,p.context.semantic)||meaningAllowed(s,p.context.semantic)));
-if(!pool.length){t.next=s.day+4;return false;}const p=pool[mix(`${s.seed}:${s.day}:${s.areaId}`,1803)%pool.length],known=routineAction(s,p);p.uid=`learned:${s.lifeId}:${p.id}:${s.day}`;
+if(!pool.length){t.next=s.day+4;return false;}const p=diverseRoutine(s,pool,p=>p.context.semantic,1803),known=routineAction(s,p);p.uid=`learned:${s.lifeId}:${p.id}:${s.day}`;
 if(known){resolveSituation(s,p,known,{log,remember},true);}else if(!decision(s,p.id,p.text,p.options.map(o=>[o.id,o.text]),p.context))return false;
 t.seen[p.context.cause]=s.day;t.next=s.day+20+mix(s.seed+s.day,1804)%21;return true;}
 export function validateSituations(s){const t=s.situations;if(!t){if(s.pending?.id.startsWith('composed:'))throw Error('상황 원인이 없는 선택');return;}
