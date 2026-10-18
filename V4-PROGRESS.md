@@ -120,3 +120,11 @@ Next priority: human age/schedule/stress and ongoing household changes, then bro
 People now retain age, weekly schedule, stress, activity and bounded history; effective time feeds actual care/access calculations. Remote former guardians do not provide daily care to lost street dogs. Staff off-days retain coverage, and replaced caregivers become inactive relations. Existing saves initialize human state prospectively. Full suite: 162/162 passed, including 1,000 complete lives. See V4-PHASE3-HUMANS.md and dist/data/v4-human-quality.json. Exact prompt repetition is 5.838%, so no global repetition improvement is claimed.
 
 Next: broader causal arcs and endings, global repetition and learned routines, presentation pacing/16×, contextual image coverage, 10,000 complete-life validation and actual mobile/browser QA. Human families/remote ecology and heritable genetics remain incomplete. Phase 3 foundations are implemented; full v4 remains open.
+
+## Phase 4 causal-memory checkpoint — 2026-10-18
+
+Three actual-history-triggered graphs added: friend distance/familiarity, new-caregiver trust, and post-treatment movement. Catalog now 9 graphs / 44 stages / 54 actions. Source-linked memories retain actual actors, causes and future stages. Bounded decaying domain transfer affects future behavior. Actor/area/mobility changes close incompatible experiences; death closes unfinished journeys/threads. Existing short-thread actor guards and serializable memory roundtrips are verified.
+
+Full suite: 176/176 passed including 1,000 complete lives. Same-seed comparison: leftover active arcs at death 38 → 0; source-linked new graphs 1,690; exact repetition 5.838% → 5.702%, meaning-window repetition 2.050% → 1.867%, action-structure repetition essentially unchanged. See V4-PHASE4.md and dist/data/v4-causal-quality.json. These partial metrics do not prove globally unique lives.
+
+Next: global meaning/choice-structure repetition and broader learned routine coverage, then pacing/16×/contextual images and 10,000 full-life evaluation. Broader causal/sibling/NPC family stories, human family structure, inherited predispositions and regional evidence remain open. Actual mobile/browser QA and conditional 100,000-life evaluation have not run. Full v4 is not complete.

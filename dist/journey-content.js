@@ -1,3 +1,4 @@
+import{CAUSAL_JOURNEYS}from './causal-journey-content.js';
 const a=(id,text,result,next,delta={},days=7)=>({id,text,result,next,delta,days});
 const finish=(text,delta={})=>({text,delta,terminal:true});
 export const JOURNEYS=[
@@ -34,3 +35,5 @@ play:{text:'사람이 멀리 던지는 대신 코앞에 부드러운 장난감�
 near:{text:'가까운 곳에서 먹고 마시는 생활이 이어진다. 사람은 먹는 양과 일어서는 모습을 살피며 조용한 시간을 나누어 쓴다.',actions:[a('short','짧게 일어나 주변을 돌아본다','멀리 걷지 않고 방 안을 살핀 뒤 다시 누웠다. 사람이 보폭을 맞춰 곁에서 멈춘다.','steady',{comfort:2},16),a('rest','오늘은 편한 자리에서 더 쉰다','먹이와 물이 가까이 있어 억지로 오래 움직이지 않았다. 사람은 몸의 변화를 계속 살핀다.','gentle',{fatigue:-3},16)]},
 steady:finish('짧게 움직이고 자주 쉬는 순서가 생활에 자리 잡았다. 몸이 불편해 보이는 변화는 따로 진료에서 확인하며 일상을 조절한다.',{comfort:3}),gentle:finish('함께 있는 시간은 뛰는 놀이보다 가까운 돌봄과 휴식으로 이어진다. 익숙한 잠자리와 사람의 발소리가 하루의 가까운 범위에 남아 있다.',{familyBond:2})}}
 ];
+
+JOURNEYS.push(...CAUSAL_JOURNEYS);
