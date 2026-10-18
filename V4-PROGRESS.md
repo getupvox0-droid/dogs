@@ -114,3 +114,9 @@ Six causal situations and 13 actions, saved followups, actor-specific memory eff
 Nearby dogs now retain needs, intake, goals, activity, territory and reciprocal contact memories. Their own state and past contact affect social purpose and response. Dead/remote actors cannot resolve an encounter; local focus repairs safely. Existing saves initialize prospectively. See V4-PHASE3.md and dist/data/v4-neighbor-quality.json. Final full suite: 152/152 passed, including 1,000 full lifetimes. Meaning-tag repetition: 2.085% → 2.051%; exact prompt repetition remains about 5.83%, so global repetition remains unresolved.
 
 Next priority: human age/schedule/stress and ongoing household changes, then broader causal arcs and global repetition/pacing. Remote NPC ecology, inherited genetics, 16×/contextual images, 10,000 full-life evaluation and actual browser/mobile QA remain open. This is the animal foundation of Phase 3, not completion of all v4 phases.
+
+## Phase 3 human-life checkpoint — 2026-10-18
+
+People now retain age, weekly schedule, stress, activity and bounded history; effective time feeds actual care/access calculations. Remote former guardians do not provide daily care to lost street dogs. Staff off-days retain coverage, and replaced caregivers become inactive relations. Existing saves initialize human state prospectively. Full suite: 162/162 passed, including 1,000 complete lives. See V4-PHASE3-HUMANS.md and dist/data/v4-human-quality.json. Exact prompt repetition is 5.838%, so no global repetition improvement is claimed.
+
+Next: broader causal arcs and endings, global repetition and learned routines, presentation pacing/16×, contextual image coverage, 10,000 complete-life validation and actual mobile/browser QA. Human families/remote ecology and heritable genetics remain incomplete. Phase 3 foundations are implemented; full v4 remains open.
