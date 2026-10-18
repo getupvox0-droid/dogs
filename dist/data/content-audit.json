@@ -1,5 +1,5 @@
 {
-  "version": "1.4",
+  "version": "1.6",
   "species": [
     "dog"
   ],
@@ -53,7 +53,32 @@
   ],
   "contextualSituations": 16,
   "contextualActions": 34,
-  "branchingExperienceThreads": 8,
+  "branchingExperienceThreads": 16,
   "clinicalConditionKinds": 8,
-  "qualityCoverage": "1000 complete lives; first/last/weighted action policies; exact prompt repetition; new situation condition/action matrix"
+  "qualityCoverage": "1000 complete lives; first/last/weighted action policies; exact prompt repetition; new situation condition/action matrix",
+  "regionalEvidence": {
+    "countries": [
+      "KR",
+      "JP",
+      "US"
+    ],
+    "mode": "reference-only",
+    "calibratedIndividualHazards": false
+  },
+  "custodyArcs": [
+    "identification",
+    "missing report",
+    "found intake",
+    "identity check",
+    "owner contact",
+    "waiting",
+    "reunion or unconfirmed owner",
+    "temporary foster",
+    "human review",
+    "adoption or shelter return"
+  ],
+  "multiStageStories": 6,
+  "multiStageScenes": 31,
+  "multiStageActions": 40,
+  "countingNote": "Stories, scenes, actions and tested condition combinations are reported separately; these are not 1100 curated templates."
 }
