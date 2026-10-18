@@ -104,3 +104,7 @@ and choice-structure signatures without counting wording variations as new event
 Do not rerun image uploads: GitHub already contains all original lossless asset
 parts and its restoration manifest. Update text files against the latest branch.
 GitHub publication and production deployment are verified separately in the handoff.
+
+## Phase 2 checkpoint — 2026-10-18
+
+Six causal situations and 13 actions, saved followups, actor-specific memory effects, familiar routine automation and partial authored semantic metrics are implemented. See V4-PHASE2.md and dist/data/v4-situation-quality.json. Frozen suite: 140/140 passed including 1,000 complete lives. Exact prompt repetition regressed from 4.491% to 5.830%; global repetition remains open. Broader Phases 2–7 remain unfinished; no browser/mobile QA or 10,000 full-life run is claimed.
