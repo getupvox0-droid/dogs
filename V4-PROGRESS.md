@@ -108,3 +108,9 @@ GitHub publication and production deployment are verified separately in the hand
 ## Phase 2 checkpoint — 2026-10-18
 
 Six causal situations and 13 actions, saved followups, actor-specific memory effects, familiar routine automation and partial authored semantic metrics are implemented. See V4-PHASE2.md and dist/data/v4-situation-quality.json. Frozen suite: 140/140 passed including 1,000 complete lives. Exact prompt repetition regressed from 4.491% to 5.830%; global repetition remains open. Broader Phases 2–7 remain unfinished; no browser/mobile QA or 10,000 full-life run is claimed.
+
+## Phase 3 animal-autonomy checkpoint — 2026-10-18
+
+Nearby dogs now retain needs, intake, goals, activity, territory and reciprocal contact memories. Their own state and past contact affect social purpose and response. Dead/remote actors cannot resolve an encounter; local focus repairs safely. Existing saves initialize prospectively. See V4-PHASE3.md and dist/data/v4-neighbor-quality.json. Final full suite: 152/152 passed, including 1,000 full lifetimes. Meaning-tag repetition: 2.085% → 2.051%; exact prompt repetition remains about 5.83%, so global repetition remains unresolved.
+
+Next priority: human age/schedule/stress and ongoing household changes, then broader causal arcs and global repetition/pacing. Remote NPC ecology, inherited genetics, 16×/contextual images, 10,000 full-life evaluation and actual browser/mobile QA remain open. This is the animal foundation of Phase 3, not completion of all v4 phases.

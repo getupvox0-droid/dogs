@@ -15,45 +15,45 @@
   },
   "uniqueHistories": 1000,
   "decisionTypes": 123,
-  "questionCount": 89101,
-  "repeatedQuestions": 5195,
-  "repeatRatio": 0.05830462059909541,
+  "questionCount": 88903,
+  "repeatedQuestions": 5182,
+  "repeatRatio": 0.05828824674082989,
   "maxSamePromptPerLife": 11,
   "purposes": {
-    "rest": 17783,
-    "cautious": 6962,
-    "explore": 19381,
-    "social": 23259,
-    "play": 8027,
-    "food": 10565,
-    "avoid": 8063,
-    "water": 9535,
-    "territory": 4782,
-    "curious": 6423,
-    "care": 6654,
-    "reunion": 2635
+    "rest": 18864,
+    "cautious": 5397,
+    "explore": 19561,
+    "social": 23368,
+    "play": 8088,
+    "food": 10695,
+    "avoid": 8106,
+    "water": 9533,
+    "territory": 3464,
+    "curious": 7607,
+    "care": 6774,
+    "reunion": 3249
   },
   "transitionsAndCare": {
-    "clinical-diagnosis": 791,
-    "surgery-performed": 295,
-    "clinical-managed": 785,
-    "guardian-changed": 65,
-    "adopt": 635,
-    "rescued-shelter": 68
+    "clinical-diagnosis": 792,
+    "surgery-performed": 293,
+    "clinical-managed": 786,
+    "guardian-changed": 69,
+    "adopt": 634,
+    "rescued-shelter": 67
   },
   "finalRoutes": {
-    "family": 218,
-    "street": 193,
-    "shelter-adoption": 340,
-    "community-adoption": 116,
-    "foster-adoption": 26,
+    "family": 224,
+    "street": 188,
+    "shelter-adoption": 345,
+    "community-adoption": 109,
+    "foster-adoption": 28,
     "rescue-adoption": 86,
-    "shelter": 21
+    "shelter": 20
   },
   "ageDays": {
     "min": 14,
     "max": 7290,
-    "mean": 4141.041
+    "mean": 4161.955
   },
   "limitations": "Exact same prompt within each life; not a semantic or visual quality score. Game assumptions, not clinical or country estimates."
 }
