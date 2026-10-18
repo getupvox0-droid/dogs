@@ -1,3 +1,19 @@
+# GitHub export — run and build
+
+Full source export from Dogs Life commit `5a572e22c793023f4f655e1e56049bd52ff5fdab`. Original source, tests, data, reports and all 68 original images are included.
+
+Large images are stored losslessly as Base64 parts under `asset-source/` to accommodate transfer limits. Node.js 22+ restores the exact original image files and verifies every image by byte length and Git blob SHA-1. No external downloads or API keys are needed.
+
+```sh
+npm run build
+npm test
+npm start
+```
+
+Deploy the generated `dist/` folder using build command `npm run build`. Tests also restore images automatically. The optional `npm start` HTTP server requires Python 3. Browser save data remains local to each browser.
+
+---
+
 # 작은 발자국 / 강아지의 삶
 
 Development version 0.1. Independent browser-local life simulator; no third-party game source or text is included.
