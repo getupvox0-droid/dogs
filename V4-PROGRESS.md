@@ -148,3 +148,17 @@ the 13-year/240-second pacing target remains pending.
 
 Verification: npm test — 198 passed, 0 failed; final focused pacing/visual tests
 10 passed. Existing complete-lifetime sample remains 1,000, not 10,000.
+
+### Phase 6 follow-up — routine output density
+
+Story/observation now batch safe routine stretches (7/30 days), retaining daily
+calculations and stopping on nonroutine records. Main-feed summaries respect
+home/area and keep original record indices; filters use raw rows. Reading gates
+separate important event text from routine summaries. Timeline reads are pure.
+Before/after same-seed scheduled-wait measurements are stored in
+`dist/data/v4-pacing-quality.json`; see V4-PHASE6.md for comparison and limits.
+13-year/240-second target, mobile browser QA and larger Phase 7 samples remain.
+
+Follow-up verification: npm test — 202 passed, 0 failed (including the existing
+1,000 complete lifetime sample); focused pacing/choice/UI-model checks 18/18.
+Actual mobile browser play remains unverified.
