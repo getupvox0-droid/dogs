@@ -1,0 +1,143 @@
+{
+  "phase": "v4 phase4 causal memory and story foundation",
+  "baselineGithubCommit": "f475e1b2529f36425eec4cb6d025ac8b0ece1251",
+  "baselineSourceCommit": "7b1a4eb37c98a491d881a6d98a274fe509ce4d2c",
+  "catalog": {
+    "before": {
+      "graphs": 6,
+      "stages": 31,
+      "actions": 40
+    },
+    "after": {
+      "graphs": 9,
+      "stages": 44,
+      "actions": 54
+    }
+  },
+  "fullSuite": {
+    "tests": 176,
+    "passed": 176,
+    "failed": 0,
+    "seconds": 124.767952326
+  },
+  "before": {
+    "sample": 1000,
+    "journeyCounts": {
+      "started": {
+        "recall": 811,
+        "vacuum": 813,
+        "shared-space": 206,
+        "senior-routine": 712,
+        "street-route": 215,
+        "shelter-walk": 469
+      },
+      "completed": {
+        "recall": 802,
+        "vacuum": 799,
+        "shared-space": 203,
+        "senior-routine": 707,
+        "street-route": 206,
+        "shelter-walk": 466
+      },
+      "closed": {
+        "context-changed": 34
+      },
+      "causalSources": 0,
+      "episodesWithSource": 0,
+      "domainEpisodes": 0,
+      "activeArcsAtDeath": 38,
+      "invalidPendingJourneyActions": 0
+    },
+    "policies": [
+      "first",
+      "last",
+      "weighted deterministic"
+    ],
+    "questions": 88864,
+    "explicitDecisions": 3464,
+    "semanticTypes": 172,
+    "causes": 137,
+    "rawActionSequences": 120,
+    "semanticWindowRepeats": 1822,
+    "semanticWindowRepeatRatio": 0.020503240907454087,
+    "choiceStructureWindowRepeatRatio": 0.06813782859200576,
+    "meanActorsPerLife": 7.346,
+    "exactTextRepeatRatio": 0.05838134677709759,
+    "choicesWithImmediateStateChange": 74906,
+    "choices": 88864,
+    "immediateStateChangeRatio": 0.8429285199855959,
+    "completedComposedFollowups": 4056,
+    "automaticComposedRoutines": 601,
+    "invalidComposedChoices": 0,
+    "seconds": 106.882417575,
+    "definition": "Authored cause/goal/conflict/role/canonical action set repeated among previous 5 questions within 180 days. Legacy classifications are ID-based except medical/social context, not a complete semantic review. Actor IDs excluded from semantic type counts. Game assumptions; not clinical validation."
+  },
+  "after": {
+    "sample": 1000,
+    "journeyCounts": {
+      "started": {
+        "recall": 810,
+        "vacuum": 812,
+        "friend-history": 823,
+        "shared-space": 194,
+        "senior-routine": 714,
+        "mobility-memory": 458,
+        "shelter-walk": 460,
+        "guardian-anchor": 409,
+        "street-route": 222
+      },
+      "completed": {
+        "recall": 796,
+        "vacuum": 798,
+        "friend-history": 650,
+        "shared-space": 190,
+        "senior-routine": 709,
+        "mobility-memory": 408,
+        "shelter-walk": 456,
+        "guardian-anchor": 393,
+        "street-route": 211
+      },
+      "closed": {
+        "area-changed": 266,
+        "life-ended": 23,
+        "context-changed": 2
+      },
+      "causalSources": 1690,
+      "episodesWithSource": 2889,
+      "domainEpisodes": 19595,
+      "activeArcsAtDeath": 0,
+      "invalidPendingJourneyActions": 0
+    },
+    "policies": [
+      "first",
+      "last",
+      "weighted deterministic"
+    ],
+    "questions": 91595,
+    "explicitDecisions": 3478,
+    "semanticTypes": 182,
+    "causes": 143,
+    "rawActionSequences": 126,
+    "semanticWindowRepeats": 1710,
+    "semanticWindowRepeatRatio": 0.018669141328675146,
+    "choiceStructureWindowRepeatRatio": 0.06814782466291829,
+    "meanActorsPerLife": 7.417,
+    "exactTextRepeatRatio": 0.057022763251269176,
+    "choicesWithImmediateStateChange": 77222,
+    "choices": 91595,
+    "immediateStateChangeRatio": 0.8430809542005568,
+    "completedComposedFollowups": 4070,
+    "automaticComposedRoutines": 600,
+    "invalidComposedChoices": 0,
+    "seconds": 110.590233197,
+    "definition": "Authored cause/goal/conflict/role/canonical action set repeated among previous 5 questions within 180 days. Legacy classifications are ID-based except medical/social context, not a complete semantic review. Actor IDs excluded from semantic type counts. Game assumptions; not clinical validation."
+  },
+  "limitations": [
+    "Partial authored semantic taxonomy; improved ratio is not proof of globally unique lives",
+    "Each causal graph is currently limited to once per life",
+    "Source-linked game experiences, not calibrated clinical or population rates",
+    "Concurrent timings are not isolated benchmarks",
+    "No actual browser/mobile QA",
+    "10,000 birth samples are not 10,000 complete lives"
+  ]
+}

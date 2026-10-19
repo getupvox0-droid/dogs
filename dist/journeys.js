@@ -1,0 +1,39 @@
+import{JOURNEYS}from './journey-content.js';import{mix}from './world.js';import{memoryBias}from './behavior.js';
+export{JOURNEYS};
+const clamp=n=>Math.max(0,Math.min(100,n));
+function apply(s,delta={}){for(const[k,v]of Object.entries(delta)){const owner=k in s.needs?s.needs:s;if(!Number.isFinite(owner[k]))throw Error('정의되지 않은 이야기 상태: '+k);owner[k]=clamp(owner[k]+v)}}
+export function initJourneys(s){s.journeys??={version:1,next:s.day+90,used:[],arcs:[]};return s.journeys;}
+export function journeyEligible(s,d){return s.alive&&s.day>=d.min&&d.homes.includes(s.home)&&!s.story.lost&&!s.medical.episode&&!s.clinical?.active&&(!d.condition||d.condition(s))&&(!d.trigger||!!d.trigger(s));}
+function actorFor(s,d){return d.actor?d.actor(s):s.home==='street'?'environment:'+s.areaId:s.caregiverId;}
+function contextValid(s,d,j){return j.area===s.areaId&&j.home===s.home&&(d.actor?d.continues?.(s,j):j.actor===actorFor(s,d));}
+function tag(s,j,place){Object.assign(s.log.at(-1),{storyId:j.id,actorId:j.actor,journeyKind:j.kind,journeyStage:j.stage,placeLabel:place,cause:j.evidence?.kind||j.kind,sourceRecord:j.evidence?.record??null,...(j.reason?{closureReason:j.reason}:{})});}
+export function activeJourney(s){return s.journeys?.arcs.find(j=>['waiting','decision'].includes(j.status))||null;}
+export function journeyStep(s,{log,decision}){const state=initJourneys(s);let j=activeJourney(s);if(j){const d=JOURNEYS.find(d=>d.id===j.kind);if(!d||!contextValid(s,d,j)){j.status='closed';j.end=s.day;const closed=closure(s,j,d);j.reason=closed.reason;log(s,'journey-closed',closed.text);tag(s,j,d?.place||'이전 생활권');return false;}if(s.pending||s.medical.episode||s.clinical?.active||s.story.lost||s.day<j.next)return false;const n=d.nodes[j.stage];if(n.terminal){apply(s,n.delta);j.status='complete';j.end=s.day;log(s,'journey-complete',n.text);tag(s,j,n.place||d.place);state.next=s.day+80;return true;}const beforeLog=s.log.length;const context={journeyId:j.id,actor:j.actor,stage:j.stage,place:n.place||d.place,area:j.area,home:j.home,cause:j.evidence?.kind||d.id,memoryDomain:d.memoryDomain||null,sourceRecord:j.evidence?.record??null};if(decision(s,`journey:${d.id}:${j.stage}`,n.prompt?n.prompt(s,j):n.text,n.actions.map(o=>[o.id,o.text]),context)){j.status='decision';s.pending.context=context;if(s.log.length>beforeLog)tag(s,j,n.place||d.place);return true;}return false;}
+if(s.pending||s.day<state.next||s.medical.episode||s.clinical?.active||s.story.lost)return false;const pool=JOURNEYS.filter(d=>journeyEligible(s,d)&&!state.used.includes(d.id));if(!pool.length){state.next=s.day+30;return false;}const d=pool[mix(s.seed+s.day,1601)%pool.length],actor=actorFor(s,d);if(!actor){state.next=s.day+30;return false;}j={id:`journey:${d.id}:${s.day}`,kind:d.id,stage:'start',status:'waiting',start:s.day,next:s.day,area:s.areaId,home:s.home,actor,progress:0,history:[],...(d.trigger?{evidence:d.trigger(s)}:{})};state.used.push(d.id);state.arcs.push(j);return journeyStep(s,{log,decision});}
+const definitions=new Map(JOURNEYS.flatMap(d=>Object.keys(d.nodes).map(stage=>[`journey:${d.id}:${stage}`,{d,stage}])));
+function definition(id){return definitions.get(id)}
+export function validJourneyDecision(id){const def=definition(id);return !!def&&!def.d.nodes[def.stage].terminal;}
+export function canResolveJourney(s,p,id){const def=definition(p.id),j=activeJourney(s);return !!def&&!!j&&j.kind===def.d.id&&j.stage===def.stage&&j.status==='decision'&&(!p.context||p.context.journeyId===j.id&&(!p.context.actor||p.context.actor===j.actor)&&(!p.context.stage||p.context.stage===j.stage)&&(!('sourceRecord' in p.context)||p.context.sourceRecord===(j.evidence?.record??null))&&(!('memoryDomain' in p.context)||p.context.memoryDomain===(def.d.memoryDomain||null)))&&contextValid(s,def.d,j)&&def.d.nodes[def.stage].actions.some(o=>o.id===id);}
+export function journeyChoice(s,p,id,{log,remember}){if(!p.id.startsWith('journey:')||!canResolveJourney(s,p,id))return false;const j=activeJourney(s),d=JOURNEYS.find(d=>d.id===j.kind),node=d.nodes[j.stage],o=node.actions.find(o=>o.id===id),h=s.humans?.find(h=>h.id===j.actor);const base=.35+s.worldModel.traits.adaptability/250+(h?.knowledge??50)/300-s.stress/300+memoryBias(s,j.actor)/100+j.progress*.03;const chance=Math.max(.1,Math.min(.95,d.chance?d.chance(s,j,o,base):base));const steady=!o.challenge||mix(`${s.seed}:${j.id}:${j.stage}:${s.day}`,1602)/4294967296<chance;const repeated=j.history.filter(h=>h.stage===j.stage).length>=2;const next=steady?o.next:repeated&&d.retryEnd?d.retryEnd:o.fallback;apply(s,steady?o.delta:{stress:1});d.effect?.(s,j,o,steady);j.history.push({stage:j.stage,day:s.day,action:id,result:steady?'steady':'hesitant',next});const text=steady?o.result:o.alternate;log(s,'journey-result',text);tag(s,j,node.place||d.place);remember(s,`journey:${d.id}:${j.stage}:${id}`);j.progress+=steady?1:0;j.stage=next;j.status='waiting';j.next=s.day+o.days;return true;}
+export function validateJourneys(s){const t=s.journeys;if(!t){if(s.pending?.id?.startsWith('journey:'))throw Error('이야기 없는 선택 기록');return;}if(s.pending?.id?.startsWith('journey:')&&!s.pending.options.every(o=>canResolveJourney(s,s.pending,o.id)))throw Error('이야기 단계와 맞지 않는 선택 기록');if(t.arcs?.some(j=>j.status==='decision')&&!s.pending?.id?.startsWith('journey:'))throw Error('대기 선택이 없는 이야기 단계');if(t.version!==1||!Number.isInteger(t.next)||!Array.isArray(t.used)||!t.used.every(id=>JOURNEYS.some(d=>d.id===id))||!Array.isArray(t.arcs)||!t.arcs.every(j=>{const d=JOURNEYS.find(d=>d.id===j.kind);return d&&validEvidence(s,d,j)&&d.nodes[j.stage]&&typeof j.id==='string'&&typeof j.actor==='string'&&typeof j.area==='string'&&['family','shelter','street'].includes(j.home)&&['waiting','decision','complete','closed'].includes(j.status)&&Number.isInteger(j.start)&&j.start>=0&&Number.isInteger(j.next)&&j.next>=j.start&&Number.isFinite(j.progress)&&Array.isArray(j.history)&&j.history.every(h=>d.nodes[h.stage]&&Number.isInteger(h.day)&&h.day>=j.start&&['steady','hesitant'].includes(h.result)&&d.nodes[h.next]);})||t.arcs.filter(j=>['waiting','decision'].includes(j.status)).length>1)throw Error('손상된 다단계 이야기');}
+
+export function validEvidence(s,d,j){
+ if(!d.trigger)return true;
+ const e=j.evidence,r=e&&s.log[e.record];
+ if(!e||!Number.isInteger(e.record)||e.record<0||!r||e.day!==r.day||e.day>j.start||e.actor!==j.actor)return false;
+ if(e.kind==='repeated-dog-contact')return r.id==='dog-friend'&&r.actorId===j.actor&&['settled','distance'].includes(e.result);
+ if(e.kind==='new-caregiver')return ['adopt','guardian-changed','foster-start'].includes(r.id)&&r.area===j.area;
+ if(e.kind==='managed-mobility')return r.id==='clinical-managed'&&r.area===j.area&&r.storyId===e.clinicalId&&s.clinical.history.some(c=>c.id===e.clinicalId&&c.kind===e.condition&&c.end===e.day&&c.treatment===e.treatment&&!!c.residual===e.residual);
+ return false;
+}
+export function endJourneys(s){for(const j of s.journeys?.arcs||[])if(['waiting','decision'].includes(j.status)){j.status='closed';j.end=s.day;j.reason='life-ended';}}
+
+function closure(s,j,d){
+ if(j.area!==s.areaId||j.home!==s.home)return {reason:'area-changed',text:'다른 곳에서 생활하게 됐다. 이전 생활권에서 이어가던 경험은 그곳의 기록으로 남았다.'};
+ const a=s.neighborhood?.animals.find(a=>a.id===j.actor);
+ if(a?.alive===false)return {reason:'actor-died',text:`${a.name}의 삶이 끝났다. 함께 머물던 경험은 더 이상 새로운 만남으로 이어지지 않고 기록에 남았다.`};
+ if(a&&a.area!==s.areaId)return {reason:'actor-left',text:`${a.name}와 더는 같은 생활권에 지내지 않는다. 이곳에서 함께 머물던 날들이 기억으로 남았다.`};
+ if(d?.memoryDomain==='movement'&&s.clinical.mobility<60)return {reason:'mobility-changed',text:'몸 상태가 다시 달라져 이어가던 활동을 멈췄다. 이전의 연습 결과보다 지금의 불편과 돌봄을 먼저 살핀다.'};
+ if(s.humans?.some(h=>h.id===j.actor)&&j.actor!==s.caregiverId)return {reason:'caregiver-changed',text:'돌보는 사람이 바뀌었다. 새로운 발소리와 손길 사이에서 다시 편한 거리를 살핀다.'};
+ return {reason:'context-changed',text:'함께 지내는 상대나 생활 조건이 달라졌다. 이전에 이어가던 경험은 그때의 기록으로 남았다.'};
+}

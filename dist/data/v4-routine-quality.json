@@ -1,0 +1,1218 @@
+{
+  "phase": "v4 phase5 routine semantic and learning foundation",
+  "baselineGithubCommit": "ffd9cc3d7ff40b20bd68b4aa379965ebc7a8bea9",
+  "baselineSourceCommit": "9d1562d940b9b4099b81825a2c6312f2108e6302",
+  "fullSuite": {
+    "tests": 195,
+    "passed": 195,
+    "failed": 0,
+    "seconds": 136.563091665
+  },
+  "before": {
+    "sample": 1000,
+    "taxonomy": "routine-v1 normalized for both engines",
+    "routineStats": {
+      "questions": 37561,
+      "repeats": 1865,
+      "meaningRepeats": 529,
+      "structureRepeats": 1474,
+      "protectedQuestions": 54034,
+      "protectedRepeats": 3358,
+      "medicalQuestions": 5761,
+      "medicalRepeats": 2920,
+      "automaticEpisodes": 0,
+      "learnedContextsAtEnd": 0,
+      "recordedExplicitDecisions": 3478,
+      "exactRepeatRatio": 0.04965256516067197,
+      "meaningRepeatRatio": 0.014083757088469423,
+      "structureRepeatRatio": 0.03924283166049892
+    },
+    "repeatByDecision": {
+      "life:toilet": {
+        "questions": 182,
+        "repeats": 0
+      },
+      "thread:milk-to-bowl": {
+        "questions": 675,
+        "repeats": 0
+      },
+      "life:clinic": {
+        "questions": 806,
+        "repeats": 0
+      },
+      "situation:night-light": {
+        "questions": 498,
+        "repeats": 0
+      },
+      "journey:recall:start": {
+        "questions": 810,
+        "repeats": 0
+      },
+      "journey:recall:practice": {
+        "questions": 689,
+        "repeats": 150
+      },
+      "thread:clinic-handling": {
+        "questions": 804,
+        "repeats": 0
+      },
+      "journey:recall:slow": {
+        "questions": 421,
+        "repeats": 26
+      },
+      "dog-meet": {
+        "questions": 16706,
+        "repeats": 499
+      },
+      "life:bowl": {
+        "questions": 925,
+        "repeats": 0
+      },
+      "journey:recall:proof": {
+        "questions": 522,
+        "repeats": 0
+      },
+      "situation:leave-item": {
+        "questions": 812,
+        "repeats": 0
+      },
+      "life:tug": {
+        "questions": 794,
+        "repeats": 0
+      },
+      "thread:nail-sound": {
+        "questions": 773,
+        "repeats": 0
+      },
+      "situation:short-training": {
+        "questions": 789,
+        "repeats": 0
+      },
+      "life:scent-game": {
+        "questions": 797,
+        "repeats": 0
+      },
+      "life:beach": {
+        "questions": 108,
+        "repeats": 0
+      },
+      "journey:vacuum:start": {
+        "questions": 812,
+        "repeats": 0
+      },
+      "journey:vacuum:distance": {
+        "questions": 540,
+        "repeats": 0
+      },
+      "thread:brush": {
+        "questions": 810,
+        "repeats": 0
+      },
+      "journey:vacuum:routine": {
+        "questions": 418,
+        "repeats": 0
+      },
+      "situation:snuffle-mat": {
+        "questions": 807,
+        "repeats": 0
+      },
+      "life:empty-bowl": {
+        "questions": 804,
+        "repeats": 0
+      },
+      "life:visitor-play": {
+        "questions": 805,
+        "repeats": 0
+      },
+      "situation:visitor-shoes": {
+        "questions": 807,
+        "repeats": 0
+      },
+      "thread:harness-fit": {
+        "questions": 812,
+        "repeats": 0
+      },
+      "life:garden-task": {
+        "questions": 652,
+        "repeats": 0
+      },
+      "journey:friend-history:start": {
+        "questions": 823,
+        "repeats": 0
+      },
+      "companion-time": {
+        "questions": 2069,
+        "repeats": 0
+      },
+      "life:recall": {
+        "questions": 801,
+        "repeats": 0
+      },
+      "situation:wind-fence": {
+        "questions": 735,
+        "repeats": 0
+      },
+      "thread:child-boundary": {
+        "questions": 712,
+        "repeats": 0
+      },
+      "journey:friend-history:shared-rest": {
+        "questions": 419,
+        "repeats": 0
+      },
+      "life:sore-day": {
+        "questions": 803,
+        "repeats": 0
+      },
+      "life:fetch": {
+        "questions": 794,
+        "repeats": 0
+      },
+      "situation:water-bowl-change": {
+        "questions": 815,
+        "repeats": 0
+      },
+      "life:puzzle": {
+        "questions": 792,
+        "repeats": 0
+      },
+      "life:sofa-place": {
+        "questions": 804,
+        "repeats": 0
+      },
+      "life:walk-direction": {
+        "questions": 809,
+        "repeats": 0
+      },
+      "life:boarding": {
+        "questions": 785,
+        "repeats": 0
+      },
+      "thread:two-bowls": {
+        "questions": 194,
+        "repeats": 0
+      },
+      "journey:shared-space:start": {
+        "questions": 194,
+        "repeats": 0
+      },
+      "journey:shared-space:separate": {
+        "questions": 118,
+        "repeats": 0
+      },
+      "life:car-ride": {
+        "questions": 798,
+        "repeats": 0
+      },
+      "life:fetch-second": {
+        "questions": 528,
+        "repeats": 0
+      },
+      "situation:cool-floor": {
+        "questions": 575,
+        "repeats": 0
+      },
+      "life:nose-second": {
+        "questions": 527,
+        "repeats": 0
+      },
+      "life:new-pet": {
+        "questions": 655,
+        "repeats": 0
+      },
+      "life:grooming": {
+        "questions": 804,
+        "repeats": 0
+      },
+      "life:recall-second": {
+        "questions": 531,
+        "repeats": 0
+      },
+      "move-house": {
+        "questions": 784,
+        "repeats": 0
+      },
+      "composed:changed-home-route": {
+        "questions": 1566,
+        "repeats": 720
+      },
+      "life:visitor-second": {
+        "questions": 532,
+        "repeats": 0
+      },
+      "thread:settling-sounds": {
+        "questions": 752,
+        "repeats": 0
+      },
+      "care-change": {
+        "questions": 243,
+        "repeats": 0
+      },
+      "life:paw-care": {
+        "questions": 802,
+        "repeats": 0
+      },
+      "open-gate": {
+        "questions": 597,
+        "repeats": 0
+      },
+      "life:puzzle-second": {
+        "questions": 526,
+        "repeats": 0
+      },
+      "life:family-busy": {
+        "questions": 803,
+        "repeats": 0
+      },
+      "life:traffic": {
+        "questions": 800,
+        "repeats": 0
+      },
+      "life:child-home": {
+        "questions": 662,
+        "repeats": 0
+      },
+      "situation:puddle-route": {
+        "questions": 777,
+        "repeats": 0
+      },
+      "life:wet-ground": {
+        "questions": 755,
+        "repeats": 0
+      },
+      "life:rainy-play": {
+        "questions": 601,
+        "repeats": 0
+      },
+      "life:thunder": {
+        "questions": 757,
+        "repeats": 0
+      },
+      "journey:senior-routine:start": {
+        "questions": 714,
+        "repeats": 0
+      },
+      "journey:senior-routine:play": {
+        "questions": 487,
+        "repeats": 0
+      },
+      "thread:aging-companion": {
+        "questions": 716,
+        "repeats": 0
+      },
+      "life:old-bed": {
+        "questions": 712,
+        "repeats": 0
+      },
+      "life:old-walk": {
+        "questions": 711,
+        "repeats": 0
+      },
+      "situation:slow-ramp": {
+        "questions": 582,
+        "repeats": 0
+      },
+      "life:aging-play-choice": {
+        "questions": 706,
+        "repeats": 0
+      },
+      "life:senior-puzzle": {
+        "questions": 483,
+        "repeats": 0
+      },
+      "life:safe-den-second": {
+        "questions": 277,
+        "repeats": 0
+      },
+      "life:night-wake": {
+        "questions": 690,
+        "repeats": 0
+      },
+      "life:water": {
+        "questions": 691,
+        "repeats": 0
+      },
+      "health-response": {
+        "questions": 4959,
+        "repeats": 2920
+      },
+      "composed:litter-boundary": {
+        "questions": 807,
+        "repeats": 0
+      },
+      "life:chewing": {
+        "questions": 83,
+        "repeats": 0
+      },
+      "life:bed-choice": {
+        "questions": 218,
+        "repeats": 0
+      },
+      "alone": {
+        "questions": 646,
+        "repeats": 0
+      },
+      "life:leash-first": {
+        "questions": 57,
+        "repeats": 0
+      },
+      "journey:vacuum:refuge": {
+        "questions": 388,
+        "repeats": 0
+      },
+      "thread:departure-routine": {
+        "questions": 659,
+        "repeats": 0
+      },
+      "journey:friend-history:space": {
+        "questions": 414,
+        "repeats": 31
+      },
+      "lost-help": {
+        "questions": 793,
+        "repeats": 0
+      },
+      "life:alone-plan": {
+        "questions": 638,
+        "repeats": 0
+      },
+      "pain-response": {
+        "questions": 802,
+        "repeats": 0
+      },
+      "journey:mobility-memory:start": {
+        "questions": 458,
+        "repeats": 0
+      },
+      "thread:post-treatment-care": {
+        "questions": 549,
+        "repeats": 0
+      },
+      "life:impulse": {
+        "questions": 364,
+        "repeats": 0
+      },
+      "life:bed-noise-followup": {
+        "questions": 68,
+        "repeats": 0
+      },
+      "journey:mobility-memory:season": {
+        "questions": 188,
+        "repeats": 0
+      },
+      "situation:rain-entry": {
+        "questions": 533,
+        "repeats": 0
+      },
+      "composed:care-time-shortage": {
+        "questions": 1052,
+        "repeats": 630
+      },
+      "encounter": {
+        "questions": 2422,
+        "repeats": 205
+      },
+      "thread:shelter-rest": {
+        "questions": 453,
+        "repeats": 0
+      },
+      "life:shelter-enrichment": {
+        "questions": 434,
+        "repeats": 0
+      },
+      "journey:shelter-walk:start": {
+        "questions": 460,
+        "repeats": 0
+      },
+      "journey:shelter-walk:yard": {
+        "questions": 298,
+        "repeats": 0
+      },
+      "situation:shelter-cleaning": {
+        "questions": 454,
+        "repeats": 0
+      },
+      "life:shelter-yard": {
+        "questions": 389,
+        "repeats": 0
+      },
+      "life:shelter-routine": {
+        "questions": 442,
+        "repeats": 0
+      },
+      "journey:guardian-anchor:start": {
+        "questions": 409,
+        "repeats": 0
+      },
+      "journey:guardian-anchor:practice": {
+        "questions": 178,
+        "repeats": 0
+      },
+      "thread:rural-distance": {
+        "questions": 455,
+        "repeats": 0
+      },
+      "thread:sibling-distance": {
+        "questions": 281,
+        "repeats": 0
+      },
+      "journey:shared-space:passing": {
+        "questions": 75,
+        "repeats": 0
+      },
+      "journey:senior-routine:near": {
+        "questions": 226,
+        "repeats": 0
+      },
+      "situation:shop-separation": {
+        "questions": 46,
+        "repeats": 0
+      },
+      "life:shelter-noise": {
+        "questions": 410,
+        "repeats": 0
+      },
+      "life:shelter-play-visit": {
+        "questions": 166,
+        "repeats": 0
+      },
+      "journey:shelter-walk:door": {
+        "questions": 160,
+        "repeats": 0
+      },
+      "composed:crowded-rest": {
+        "questions": 39,
+        "repeats": 13
+      },
+      "door": {
+        "questions": 154,
+        "repeats": 21
+      },
+      "life:meal-search": {
+        "questions": 234,
+        "repeats": 0
+      },
+      "situation:street-hose": {
+        "questions": 94,
+        "repeats": 0
+      },
+      "thread:water-route": {
+        "questions": 171,
+        "repeats": 0
+      },
+      "life:night-place": {
+        "questions": 210,
+        "repeats": 0
+      },
+      "life:closed-feeder": {
+        "questions": 217,
+        "repeats": 0
+      },
+      "journey:street-route:start": {
+        "questions": 222,
+        "repeats": 0
+      },
+      "journey:street-route:check": {
+        "questions": 140,
+        "repeats": 0
+      },
+      "life:territory": {
+        "questions": 150,
+        "repeats": 0
+      },
+      "situation:street-bin": {
+        "questions": 201,
+        "repeats": 0
+      },
+      "thread:summer-shade": {
+        "questions": 23,
+        "repeats": 0
+      },
+      "journey:street-route:time": {
+        "questions": 80,
+        "repeats": 0
+      },
+      "litter-care": {
+        "questions": 10,
+        "repeats": 5
+      },
+      "situation:shop-glass": {
+        "questions": 13,
+        "repeats": 0
+      },
+      "composed:wet-sleeping-place": {
+        "questions": 13,
+        "repeats": 3
+      },
+      "composed:missing-water": {
+        "questions": 1,
+        "repeats": 0
+      }
+    },
+    "journeyCounts": {
+      "started": {
+        "recall": 810,
+        "vacuum": 812,
+        "friend-history": 823,
+        "shared-space": 194,
+        "senior-routine": 714,
+        "mobility-memory": 458,
+        "shelter-walk": 460,
+        "guardian-anchor": 409,
+        "street-route": 222
+      },
+      "completed": {
+        "recall": 796,
+        "vacuum": 798,
+        "friend-history": 650,
+        "shared-space": 190,
+        "senior-routine": 709,
+        "mobility-memory": 408,
+        "shelter-walk": 456,
+        "guardian-anchor": 393,
+        "street-route": 211
+      },
+      "closed": {
+        "area-changed": 266,
+        "life-ended": 23,
+        "context-changed": 2
+      },
+      "causalSources": 1690,
+      "episodesWithSource": 2889,
+      "domainEpisodes": 19595,
+      "activeArcsAtDeath": 0,
+      "invalidPendingJourneyActions": 0
+    },
+    "policies": [
+      "first",
+      "last",
+      "weighted deterministic"
+    ],
+    "questions": 91595,
+    "explicitDecisions": 3478,
+    "semanticTypes": 173,
+    "causes": 135,
+    "rawActionSequences": 126,
+    "semanticWindowRepeats": 1710,
+    "semanticWindowRepeatRatio": 0.018669141328675146,
+    "choiceStructureWindowRepeatRatio": 0.07891260439980348,
+    "meanActorsPerLife": 7.417,
+    "exactTextRepeatRatio": 0.057022763251269176,
+    "choicesWithImmediateStateChange": 77222,
+    "choices": 91595,
+    "immediateStateChangeRatio": 0.8430809542005568,
+    "completedComposedFollowups": 4070,
+    "automaticComposedRoutines": 600,
+    "invalidComposedChoices": 0,
+    "seconds": 113.406578486,
+    "definition": "Authored cause/goal/conflict/role/canonical action set repeated among previous 5 questions within 180 days. Known routine IDs use the same authored routine-v1 descriptors for before/after; other legacy classifications remain partial. Runtime explicit coverage is reported separately. Actor IDs excluded from semantic type counts. Game assumptions; not clinical validation."
+  },
+  "after": {
+    "sample": 1000,
+    "taxonomy": "routine-v1 normalized for both engines",
+    "routineStats": {
+      "questions": 35041,
+      "repeats": 1835,
+      "meaningRepeats": 337,
+      "structureRepeats": 1320,
+      "protectedQuestions": 54233,
+      "protectedRepeats": 3438,
+      "medicalQuestions": 5800,
+      "medicalRepeats": 2960,
+      "automaticEpisodes": 87421,
+      "learnedContextsAtEnd": 31250,
+      "recordedExplicitDecisions": 35041,
+      "exactRepeatRatio": 0.05236722696270084,
+      "meaningRepeatRatio": 0.009617305442196284,
+      "structureRepeatRatio": 0.03767015781513085
+    },
+    "repeatByDecision": {
+      "life:toilet": {
+        "questions": 179,
+        "repeats": 0
+      },
+      "thread:milk-to-bowl": {
+        "questions": 819,
+        "repeats": 0
+      },
+      "life:clinic": {
+        "questions": 805,
+        "repeats": 0
+      },
+      "situation:night-light": {
+        "questions": 498,
+        "repeats": 0
+      },
+      "journey:recall:start": {
+        "questions": 807,
+        "repeats": 0
+      },
+      "journey:recall:practice": {
+        "questions": 681,
+        "repeats": 145
+      },
+      "thread:harness-fit": {
+        "questions": 809,
+        "repeats": 0
+      },
+      "journey:recall:slow": {
+        "questions": 412,
+        "repeats": 32
+      },
+      "dog-meet": {
+        "questions": 14193,
+        "repeats": 605
+      },
+      "life:tug": {
+        "questions": 791,
+        "repeats": 0
+      },
+      "journey:recall:proof": {
+        "questions": 521,
+        "repeats": 0
+      },
+      "situation:leave-item": {
+        "questions": 809,
+        "repeats": 0
+      },
+      "life:bowl": {
+        "questions": 925,
+        "repeats": 0
+      },
+      "thread:child-boundary": {
+        "questions": 706,
+        "repeats": 0
+      },
+      "situation:visitor-shoes": {
+        "questions": 803,
+        "repeats": 0
+      },
+      "life:garden-task": {
+        "questions": 642,
+        "repeats": 0
+      },
+      "life:puzzle": {
+        "questions": 789,
+        "repeats": 0
+      },
+      "journey:vacuum:start": {
+        "questions": 811,
+        "repeats": 0
+      },
+      "journey:vacuum:distance": {
+        "questions": 533,
+        "repeats": 0
+      },
+      "thread:clinic-handling": {
+        "questions": 799,
+        "repeats": 0
+      },
+      "life:visitor-play": {
+        "questions": 805,
+        "repeats": 0
+      },
+      "journey:vacuum:routine": {
+        "questions": 431,
+        "repeats": 0
+      },
+      "situation:short-training": {
+        "questions": 781,
+        "repeats": 0
+      },
+      "life:sofa-place": {
+        "questions": 799,
+        "repeats": 0
+      },
+      "life:fetch": {
+        "questions": 790,
+        "repeats": 0
+      },
+      "situation:wind-fence": {
+        "questions": 736,
+        "repeats": 0
+      },
+      "thread:nail-sound": {
+        "questions": 769,
+        "repeats": 0
+      },
+      "life:grooming": {
+        "questions": 804,
+        "repeats": 0
+      },
+      "journey:friend-history:start": {
+        "questions": 821,
+        "repeats": 0
+      },
+      "companion-time": {
+        "questions": 2085,
+        "repeats": 0
+      },
+      "situation:snuffle-mat": {
+        "questions": 806,
+        "repeats": 0
+      },
+      "thread:brush": {
+        "questions": 810,
+        "repeats": 0
+      },
+      "journey:friend-history:shared-rest": {
+        "questions": 415,
+        "repeats": 0
+      },
+      "life:walk-direction": {
+        "questions": 802,
+        "repeats": 0
+      },
+      "life:scent-game": {
+        "questions": 788,
+        "repeats": 0
+      },
+      "situation:puddle-route": {
+        "questions": 761,
+        "repeats": 0
+      },
+      "life:child-home": {
+        "questions": 651,
+        "repeats": 0
+      },
+      "life:fetch-second": {
+        "questions": 523,
+        "repeats": 0
+      },
+      "life:recall": {
+        "questions": 802,
+        "repeats": 0
+      },
+      "thread:two-bowls": {
+        "questions": 211,
+        "repeats": 0
+      },
+      "life:beach": {
+        "questions": 112,
+        "repeats": 0
+      },
+      "journey:shared-space:start": {
+        "questions": 212,
+        "repeats": 0
+      },
+      "journey:shared-space:separate": {
+        "questions": 126,
+        "repeats": 0
+      },
+      "life:sore-day": {
+        "questions": 799,
+        "repeats": 0
+      },
+      "life:boarding": {
+        "questions": 783,
+        "repeats": 0
+      },
+      "life:traffic": {
+        "questions": 798,
+        "repeats": 0
+      },
+      "life:family-busy": {
+        "questions": 803,
+        "repeats": 0
+      },
+      "situation:water-bowl-change": {
+        "questions": 813,
+        "repeats": 0
+      },
+      "life:paw-care": {
+        "questions": 803,
+        "repeats": 0
+      },
+      "life:recall-second": {
+        "questions": 529,
+        "repeats": 0
+      },
+      "life:car-ride": {
+        "questions": 782,
+        "repeats": 0
+      },
+      "move-house": {
+        "questions": 782,
+        "repeats": 0
+      },
+      "composed:changed-home-route": {
+        "questions": 1547,
+        "repeats": 705
+      },
+      "thread:settling-sounds": {
+        "questions": 723,
+        "repeats": 0
+      },
+      "care-change": {
+        "questions": 246,
+        "repeats": 0
+      },
+      "life:visitor-second": {
+        "questions": 536,
+        "repeats": 0
+      },
+      "open-gate": {
+        "questions": 589,
+        "repeats": 0
+      },
+      "life:nose-second": {
+        "questions": 524,
+        "repeats": 0
+      },
+      "life:empty-bowl": {
+        "questions": 800,
+        "repeats": 0
+      },
+      "life:new-pet": {
+        "questions": 659,
+        "repeats": 0
+      },
+      "life:puzzle-second": {
+        "questions": 521,
+        "repeats": 0
+      },
+      "situation:cool-floor": {
+        "questions": 610,
+        "repeats": 0
+      },
+      "situation:rain-entry": {
+        "questions": 708,
+        "repeats": 0
+      },
+      "life:water": {
+        "questions": 708,
+        "repeats": 0
+      },
+      "life:wet-ground": {
+        "questions": 752,
+        "repeats": 0
+      },
+      "life:rainy-play": {
+        "questions": 587,
+        "repeats": 0
+      },
+      "life:thunder": {
+        "questions": 763,
+        "repeats": 0
+      },
+      "journey:senior-routine:start": {
+        "questions": 715,
+        "repeats": 0
+      },
+      "life:senior-puzzle": {
+        "questions": 480,
+        "repeats": 0
+      },
+      "journey:senior-routine:play": {
+        "questions": 485,
+        "repeats": 0
+      },
+      "thread:aging-companion": {
+        "questions": 717,
+        "repeats": 0
+      },
+      "life:old-bed": {
+        "questions": 714,
+        "repeats": 0
+      },
+      "situation:slow-ramp": {
+        "questions": 577,
+        "repeats": 0
+      },
+      "life:old-walk": {
+        "questions": 714,
+        "repeats": 0
+      },
+      "life:aging-play-choice": {
+        "questions": 709,
+        "repeats": 0
+      },
+      "life:night-wake": {
+        "questions": 693,
+        "repeats": 0
+      },
+      "life:safe-den-second": {
+        "questions": 276,
+        "repeats": 0
+      },
+      "health-response": {
+        "questions": 4988,
+        "repeats": 2960
+      },
+      "composed:litter-boundary": {
+        "questions": 807,
+        "repeats": 0
+      },
+      "life:chewing": {
+        "questions": 92,
+        "repeats": 0
+      },
+      "life:bed-choice": {
+        "questions": 213,
+        "repeats": 0
+      },
+      "alone": {
+        "questions": 653,
+        "repeats": 0
+      },
+      "journey:vacuum:refuge": {
+        "questions": 371,
+        "repeats": 0
+      },
+      "life:impulse": {
+        "questions": 357,
+        "repeats": 0
+      },
+      "journey:friend-history:space": {
+        "questions": 444,
+        "repeats": 42
+      },
+      "thread:departure-routine": {
+        "questions": 667,
+        "repeats": 0
+      },
+      "life:alone-plan": {
+        "questions": 647,
+        "repeats": 0
+      },
+      "lost-help": {
+        "questions": 799,
+        "repeats": 0
+      },
+      "pain-response": {
+        "questions": 812,
+        "repeats": 0
+      },
+      "journey:mobility-memory:start": {
+        "questions": 462,
+        "repeats": 0
+      },
+      "thread:post-treatment-care": {
+        "questions": 557,
+        "repeats": 0
+      },
+      "journey:mobility-memory:season": {
+        "questions": 215,
+        "repeats": 0
+      },
+      "life:bed-noise-followup": {
+        "questions": 72,
+        "repeats": 0
+      },
+      "composed:care-time-shortage": {
+        "questions": 946,
+        "repeats": 525
+      },
+      "encounter": {
+        "questions": 2457,
+        "repeats": 222
+      },
+      "journey:shelter-walk:start": {
+        "questions": 468,
+        "repeats": 0
+      },
+      "life:shelter-yard": {
+        "questions": 392,
+        "repeats": 0
+      },
+      "situation:shelter-cleaning": {
+        "questions": 464,
+        "repeats": 0
+      },
+      "journey:shelter-walk:yard": {
+        "questions": 307,
+        "repeats": 0
+      },
+      "thread:shelter-rest": {
+        "questions": 459,
+        "repeats": 0
+      },
+      "life:shelter-routine": {
+        "questions": 445,
+        "repeats": 0
+      },
+      "journey:guardian-anchor:start": {
+        "questions": 435,
+        "repeats": 0
+      },
+      "thread:rural-distance": {
+        "questions": 446,
+        "repeats": 0
+      },
+      "journey:guardian-anchor:practice": {
+        "questions": 198,
+        "repeats": 0
+      },
+      "thread:sibling-distance": {
+        "questions": 137,
+        "repeats": 0
+      },
+      "journey:shared-space:passing": {
+        "questions": 85,
+        "repeats": 0
+      },
+      "journey:senior-routine:near": {
+        "questions": 230,
+        "repeats": 0
+      },
+      "situation:shop-glass": {
+        "questions": 21,
+        "repeats": 0
+      },
+      "life:shelter-enrichment": {
+        "questions": 445,
+        "repeats": 0
+      },
+      "life:shelter-noise": {
+        "questions": 426,
+        "repeats": 0
+      },
+      "life:shelter-play-visit": {
+        "questions": 178,
+        "repeats": 0
+      },
+      "life:night-place": {
+        "questions": 221,
+        "repeats": 0
+      },
+      "thread:water-route": {
+        "questions": 170,
+        "repeats": 0
+      },
+      "life:closed-feeder": {
+        "questions": 210,
+        "repeats": 0
+      },
+      "journey:street-route:start": {
+        "questions": 218,
+        "repeats": 0
+      },
+      "journey:street-route:check": {
+        "questions": 138,
+        "repeats": 0
+      },
+      "life:meal-search": {
+        "questions": 229,
+        "repeats": 0
+      },
+      "situation:street-bin": {
+        "questions": 188,
+        "repeats": 0
+      },
+      "life:territory": {
+        "questions": 146,
+        "repeats": 0
+      },
+      "journey:shelter-walk:door": {
+        "questions": 160,
+        "repeats": 0
+      },
+      "situation:street-hose": {
+        "questions": 98,
+        "repeats": 0
+      },
+      "door": {
+        "questions": 177,
+        "repeats": 33
+      },
+      "composed:crowded-rest": {
+        "questions": 18,
+        "repeats": 0
+      },
+      "life:leash-first": {
+        "questions": 43,
+        "repeats": 0
+      },
+      "journey:street-route:time": {
+        "questions": 79,
+        "repeats": 0
+      },
+      "situation:shop-separation": {
+        "questions": 35,
+        "repeats": 0
+      },
+      "litter-care": {
+        "questions": 9,
+        "repeats": 4
+      },
+      "thread:summer-shade": {
+        "questions": 15,
+        "repeats": 0
+      },
+      "composed:wet-sleeping-place": {
+        "questions": 5,
+        "repeats": 0
+      },
+      "composed:missing-water": {
+        "questions": 3,
+        "repeats": 0
+      }
+    },
+    "journeyCounts": {
+      "started": {
+        "recall": 807,
+        "vacuum": 811,
+        "friend-history": 821,
+        "shared-space": 212,
+        "senior-routine": 715,
+        "mobility-memory": 462,
+        "shelter-walk": 468,
+        "guardian-anchor": 435,
+        "street-route": 218
+      },
+      "completed": {
+        "recall": 790,
+        "vacuum": 790,
+        "friend-history": 642,
+        "shared-space": 208,
+        "senior-routine": 713,
+        "mobility-memory": 425,
+        "shelter-walk": 466,
+        "guardian-anchor": 416,
+        "street-route": 209
+      },
+      "closed": {
+        "area-changed": 266,
+        "life-ended": 22,
+        "context-changed": 2
+      },
+      "causalSources": 1718,
+      "episodesWithSource": 2990,
+      "domainEpisodes": 39931,
+      "activeArcsAtDeath": 0,
+      "invalidPendingJourneyActions": 0
+    },
+    "policies": [
+      "first",
+      "last",
+      "weighted deterministic"
+    ],
+    "questions": 89274,
+    "explicitDecisions": 35041,
+    "semanticTypes": 172,
+    "causes": 135,
+    "rawActionSequences": 126,
+    "semanticWindowRepeats": 1633,
+    "semanticWindowRepeatRatio": 0.018291999910388244,
+    "choiceStructureWindowRepeatRatio": 0.07973206084638304,
+    "meanActorsPerLife": 8.654,
+    "exactTextRepeatRatio": 0.059065349373837846,
+    "choicesWithImmediateStateChange": 74862,
+    "choices": 89274,
+    "immediateStateChangeRatio": 0.8385644196518584,
+    "completedComposedFollowups": 4036,
+    "automaticComposedRoutines": 716,
+    "invalidComposedChoices": 0,
+    "seconds": 120.114211912,
+    "definition": "Authored cause/goal/conflict/role/canonical action set repeated among previous 5 questions within 180 days. Known routine IDs use the same authored routine-v1 descriptors for before/after; other legacy classifications remain partial. Runtime explicit coverage is reported separately. Actor IDs excluded from semantic type counts. Game assumptions; not clinical validation."
+  },
+  "limitations": [
+    "Shared authored routine-v1 descriptors and canonical aliases applied to both runs; older published structure ratios use a different classification",
+    "Exact text ratio and overall action-structure ratio regressed",
+    "Critical and required story choices are deliberately preserved",
+    "Baseline automaticEpisodes=0 means those auto actions did not create flagged episodes; it does not mean no prior autonomous behavior",
+    "Question-tag actor IDs include corrected environmental identities and are not a census of living individuals",
+    "No actual browser/mobile QA; full 10,000-life and conditional 100,000-life tests not run",
+    "Authored game parameters, not real-world clinical or demographic rates"
+  ]
+}

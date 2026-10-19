@@ -1,6 +1,7 @@
+export const localEncounters=s=>Math.max(0,s.encounters-(s.encounterBase||0));
 // Each visit owns its prompt, actions and consequences as one authored unit.
 const o=(id,text,result,trust,memory)=>({id,text,result,trust,memory});
-export function encounterScene(s){const n=Math.min(s.encounters,3),shelter=s.home==='shelter';const scenes=[
+export function encounterScene(s){const n=Math.min(localEncounters(s),3),shelter=s.home==='shelter';const scenes=[
 {text:shelter?'돌보는 사람 곁에 처음 보는 방문자가 앉았다. 내 쪽으로 작은 먹이를 굴린 뒤 손을 거둔다.':'물을 놓던 사람이 그늘에 앉아 먹이 몇 조각을 내려놓았다. 사람과 그릇 사이에 빈 공간이 있다.',options:[o('approach','먹이를 먹고 그 자리에서 사람을 살핀다','먹이를 먹는 동안 사람은 손을 뻗지 않았다. 멀리 앉은 사람과 같은 공간에 머문 첫날이다.',12,'visitor-food'),o('wait','사람이 물러난 뒤 먹이를 먹는다','사람이 거리를 더 벌린 뒤 먹이를 먹었다. 내 속도에 맞춰 주는 움직임을 기억한다.',5,'visitor-distance'),o('leave','오늘은 먹이 대신 내 잠자리로 돌아간다','먹이 쪽으로 가지 않았다. 사람은 따라오지 않았고, 나는 익숙한 자리에서 쉬었다.',1,'visitor-boundary')]},
 {text:shelter?'전에 온 방문자가 다시 앉았다. 이번에는 손바닥을 낮게 펴 두고, 내 쪽에서 거리를 정하기를 기다린다.':'물을 갈아 주던 사람이 다시 왔다. 손을 낮게 내밀고 기다린다. 이번에는 먹이를 들고 있지 않다.',options:[o('hand','손끝에 코를 대고 잠깐 곁에 선다','손끝에 코가 닿아도 갑자기 잡지 않는다. 손이 어깨 옆을 짧게 스친 뒤 멈추자 조금 편해졌다.',13,'visitor-touch'),o('side','손에 닿지 않는 거리에서 옆으로 눕는다','만지지 않아도 함께 쉴 수 있었다. 사람은 거리를 지킨 채 한동안 옆에 앉아 있었다.',8,'visitor-company'),o('leave','몸을 돌려 오늘 만남을 마친다','사람이 손을 거두었다. 싫다는 신호를 보내도 쫓기지 않는 경험이 남았다.',3,'visitor-boundary')]},
 {text:'자주 오는 사람이 천 장난감을 바닥으로 끌어 준다. 장난감이 멈추면 내가 잡을 때까지 기다린다.',options:[o('tug','천 끝을 물고 뒤로 당긴다','사람이 반대쪽을 잡아 주었다. 당기고 놓기를 반복하다 내가 놓자 함께 쉬었다.',12,'visitor-tug'),o('carry','장난감을 물고 사람 발치에 내려놓는다','사람이 장난감을 다시 짧게 굴렸다. 가져오면 놀이가 이어지는 순서가 생겼다.',12,'visitor-fetch'),o('watch','놀이 대신 사람 옆에 몸을 눕힌다','장난감이 움직임을 멈췄다. 놀지 않아도 사람은 곁을 지켜 주었다.',6,'visitor-company')]},

@@ -1,6 +1,6 @@
 # GitHub export — run and build
 
-Full source export from Dogs Life commit `5a572e22c793023f4f655e1e56049bd52ff5fdab`. Original source, tests, data, reports and all 68 original images are included.
+Dogs Life source export, extended by the v4 world-foundation development branch. Original source, tests, data, reports and all 68 original images are included.
 
 Large images are stored losslessly as Base64 parts under `asset-source/` to accommodate transfer limits. Node.js 22+ restores the exact original image files and verifies every image by byte length and Git blob SHA-1. No external downloads or API keys are needed.
 
@@ -11,6 +11,9 @@ npm start
 ```
 
 Deploy the generated `dist/` folder using build command `npm run build`. Tests also restore images automatically. The optional `npm start` HTTP server requires Python 3. Browser save data remains local to each browser.
+
+
+Development checkpoint: [V4-PROGRESS.md](V4-PROGRESS.md). Phase 0 and the initial world foundation are implemented; the full v4 plan is not complete.
 
 ---
 
@@ -91,3 +94,9 @@ Implements v2.1 in `RELEASE-v21.md`: persistent birth/living/ending presentation
 
 ## v1.4 — Causal progression and measured repetition
 See `RELEASE-v32-followup.md`. Growth runs independently from illness/family scheduling; lost-dog searching is finite; familiar social routines stop re-asking identical decisions. Adds motives, temperament and specific memory effects, human-led placement, effective daily care, transient clinic visits, 8 condition states, 16 contextual situations and 8 branching connected experiences. Existing birth, art, ending and save formats retained. 102 checks pass including 1,000 full lives and 4,108 new condition/action cases. Exact prompt repetition in the tested cohort is 5.10%; semantic and actual mobile visual quality remain unverified. The 1,100 curated-template target and country-calibrated probabilities remain unfinished.
+
+## v1.5 — Identification, custody, foster care and regional evidence
+Adds source-scoped KR/JP/US evidence without treating annual aggregates as daily hazards; identification acquired through human care; found-dog intake, identity check, contact, waiting and reunion; temporary foster review with adoption or shelter return. Local visitor encounter counts no longer inherit meetings from a previous area. Adds eight connected care experiences (16 total). See `RELEASE-v15.md`. Full suite: 110 passed; latest relevant regression: 23 passed; 1,000 simulated lives had 4.99% exact prompt repetition. Country-calibrated probabilities, 1,100 curated templates and real mobile QA remain unfinished.
+
+## v1.6 — Multi-stage learning and lived experiences
+Six persistent multi-stage stories contain 31 scenes and 40 actions. Stages have actor and location constraints, delayed transitions, bounded retries and state-dependent uncertain outcomes. Illness postpones progress; relocation or a departed actor closes the old arc. The same birth can reach different completed paths under different actions. Fixes clinic followups without a recorded visit and fictitious maternal nursing in hand-reared biographies. Full suite: 120 passed; 1,000 complete lives; 4.74% exact prompt repetition. See `RELEASE-v16.md` for files, tests and remaining scope.

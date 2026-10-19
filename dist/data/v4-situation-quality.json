@@ -1,0 +1,62 @@
+{
+  "phase": "v4 situation foundation",
+  "baselineSource": "3154ff55bd2fe118fdbc3a6a28e7b4170fa28a01",
+  "before": {
+    "sample": 1000,
+    "policies": [
+      "first",
+      "last",
+      "weighted deterministic"
+    ],
+    "questions": 85686,
+    "explicitDecisions": 0,
+    "semanticTypes": 164,
+    "causes": 130,
+    "semanticWindowRepeats": 1868,
+    "semanticWindowRepeatRatio": 0.02180052750741078,
+    "choiceStructureWindowRepeatRatio": 0.07154027495740262,
+    "meanActorsPerLife": 6.509,
+    "exactTextRepeatRatio": 0.0449081530238312,
+    "choicesWithImmediateStateChange": 72329,
+    "choices": 85686,
+    "immediateStateChangeRatio": 0.8441168919076628,
+    "completedComposedFollowups": 0,
+    "automaticComposedRoutines": 0,
+    "invalidComposedChoices": 0,
+    "seconds": 51.294050313,
+    "definition": "Authored cause/goal/conflict/role/canonical action set repeated among previous 5 questions within 180 days. Legacy classifications are ID-based except medical/social context, not a complete semantic review. Actor IDs excluded from semantic type counts. Game assumptions; not clinical validation.",
+    "rawActionSequences": 114
+  },
+  "after": {
+    "sample": 1000,
+    "policies": [
+      "first",
+      "last",
+      "weighted deterministic"
+    ],
+    "questions": 89101,
+    "explicitDecisions": 3464,
+    "semanticTypes": 170,
+    "causes": 136,
+    "rawActionSequences": 120,
+    "semanticWindowRepeats": 1858,
+    "semanticWindowRepeatRatio": 0.020852740148819878,
+    "choiceStructureWindowRepeatRatio": 0.06842796377145037,
+    "meanActorsPerLife": 7.323,
+    "exactTextRepeatRatio": 0.05830462059909541,
+    "choicesWithImmediateStateChange": 75231,
+    "choices": 89101,
+    "immediateStateChangeRatio": 0.8443339580925018,
+    "completedComposedFollowups": 4055,
+    "automaticComposedRoutines": 599,
+    "invalidComposedChoices": 0,
+    "seconds": 55.409885998,
+    "definition": "Authored cause/goal/conflict/role/canonical action set repeated among previous 5 questions within 180 days. Legacy classifications are ID-based except medical/social context, not a complete semantic review. Actor IDs excluded from semantic type counts. Game assumptions; not clinical validation."
+  },
+  "limitations": [
+    "Partial authored taxonomy, not full semantic analysis",
+    "Exact prompt repetition regressed; global repetition work remains open",
+    "No real-world probability or clinical validation",
+    "Browser/mobile QA not executed"
+  ]
+}
