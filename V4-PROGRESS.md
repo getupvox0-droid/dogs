@@ -136,3 +136,15 @@ Shared authored meanings for 16 opportunities, 16 short threads and 7 dog intera
 Final full suite: 195/195 passed including 1,000 complete lives; focus 71/71 passed. Same 1,000 seeds: ordinary questions 37,561 → 35,041, ordinary meaning-repeat ratio 1.408% → 0.962%, ordinary structure repeat ratio 3.924% → 3.767%. Overall exact repetition **5.702% → 5.907%** and overall structure repetition **7.891% → 7.973%** regressed slightly, so global repetition is not complete. The new taxonomy was applied equally to both engines; older historical structure scores use different aliases. See V4-PHASE5.md and dist/data/v4-routine-quality.json for protected-choice and denominator caveats.
 
 Next: pacing/16× and contextual images, then 10,000 complete-life evaluation. Broad legacy semantics, additional causal/NPC-family arcs, human family structure, inherited predispositions and regional calibration remain open. Actual mobile/browser QA and conditional 100,000-life evaluation have not run. Full v4 remains incomplete.
+
+## Phase 6 increment — pacing and local scene corrections
+
+16× is now available on the live story path; speed preferences survive reload.
+Important/long reading floors and per-day simulation remain intact. Background
+documents do not advance story beats. Current images exclude scene records from
+another home/area and future records. See V4-PHASE6.md for scope and limitations.
+The initial Phase 0 table above is historical: 16× is no longer pending, while
+the 13-year/240-second pacing target remains pending.
+
+Verification: npm test — 198 passed, 0 failed; final focused pacing/visual tests
+10 passed. Existing complete-lifetime sample remains 1,000, not 10,000.
