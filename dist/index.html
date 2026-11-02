@@ -31,6 +31,45 @@
               ><button id="resume" hidden>이어서 살기</button>
             </div>
             <small>6개 국가 · 랜덤 외형 · 제작한 성장 컷과 기억</small>
+            <div class="birth-options">
+              <fieldset>
+                <legend>태어날 곳을 뽑는 기준</legend>
+                <label
+                  ><input
+                    type="radio"
+                    id="birth-mode-explore"
+                    name="birth-mode"
+                    value="explore"
+                    checked
+                  />
+                  골고루 둘러보기</label
+                ><label
+                  ><input type="radio" id="birth-mode-real" name="birth-mode" value="real" /> 현실
+                  비율</label
+                >
+                <small id="birth-mode-note"></small>
+              </fieldset>
+              <fieldset>
+                <legend>우리 집 강아지 (선택)</legend>
+                <label
+                  >이름
+                  <input id="my-dog-name" maxlength="12" autocomplete="off" placeholder="예: 보리"
+                /></label>
+                <label
+                  >나이
+                  <input
+                    id="my-dog-age"
+                    type="number"
+                    min="0"
+                    max="30"
+                    step="1"
+                    inputmode="numeric"
+                  />
+                  살</label
+                >
+                <small>마지막 장면에서 이번 삶과 나란히 보여드려요. 이 기기에만 저장됩니다.</small>
+              </fieldset>
+            </div>
           </div>
           <div class="art hero-photo">
             <img
@@ -39,16 +78,19 @@
             />
           </div>
         </div>
-        <div class="note">
+        <details class="note">
+          <summary>이 게임의 데이터와 이미지에 대해</summary>
           이 게임을 위해 제작한 품종별 성장 이미지와 주요 장면을 사용합니다. 출생 시 정해진 외형
           계열을 성장 과정에도 유지합니다. 이미지는 미리 제작한 유한한 세트이며, 매번 새 개체를
-          생성하는 방식은 아닙니다. 세부 무늬·체중·장소는 서술과 차이가 있을 수 있습니다. 국가
-          출현은 균등 추첨이며, 장소·잠자리·돌봄·소음·먹이·접근 경로의 조합과 개별 성향·계절·생활
-          변화로 경로가 달라집니다. 환경 비율·사건 확률은 게임용 가정이며, 건강 사건의 빈도는 영국
-          생명표를 참고하며, 원인·진료·회복 결과는 게임용 설정입니다. 실제 세계 통계나 수의학적
-          예측으로 표시하지 않습니다. 초기 발달 시기는 수의학 자료의 범위를 참고하며, 개체별 날짜와
-          사건은 게임용 모델입니다.
-        </div>
+          생성하는 방식은 아닙니다. 세부 무늬·체중·장소는 서술과 차이가 있을 수 있습니다. 태어날
+          나라와 환경은 "골고루 둘러보기"에서는 같은 확률로, "현실 비율"에서는 출처가 붙은 나라별 개
+          수 추정치로 뽑습니다. 현실 비율은 아직 6개 나라만 포함해 세계 전체를 대표하지 않습니다.
+          장소·잠자리·돌봄·소음·먹이·접근 경로의 조합과 개별 성향·계절·생활 변화로 경로가
+          달라집니다. 환경 비율·사건 확률은 게임용 가정이며, 건강 사건의 빈도는 영국 생명표를
+          참고하며, 원인·진료·회복 결과는 게임용 설정입니다. 실제 세계 통계나 수의학적 예측으로
+          표시하지 않습니다. 초기 발달 시기는 수의학 자료의 범위를 참고하며, 개체별 날짜와 사건은
+          게임용 모델입니다.
+        </details>
       </section>
       <section id="birth-screen" class="cinematic" hidden aria-labelledby="birth-title">
         <div class="cinematic-top">
@@ -63,9 +105,22 @@
             <p id="birth-image-note" class="muted"></p>
           </div>
           <div>
-            <h2 id="birth-place"></h2>
-            <p id="birth-story"></p>
-            <dl id="birth-facts" class="facts"></dl>
+            <span class="eyebrow">이 아이가 느끼는 것</span>
+            <p id="birth-story" class="senses"></p>
+            <label class="name-field"
+              ><span id="name-who">이 아이를 부를 이름</span>
+              <input
+                id="dog-name"
+                maxlength="12"
+                autocomplete="off"
+                placeholder="비워 두어도 괜찮아요"
+            /></label>
+            <aside class="world-info" aria-labelledby="birth-place">
+              <span class="eyebrow">이 아이는 모르는 것</span>
+              <h2 id="birth-place"></h2>
+              <div id="birth-world"></div>
+              <dl id="birth-facts" class="facts"></dl>
+            </aside>
             <button id="start-life" class="primary">삶 시작하기 ↗</button
             ><small>첫 장면을 보는 동안 시간은 멈춰 있습니다.</small>
           </div>
