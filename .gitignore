@@ -1,0 +1,38 @@
+# 빌드 시 asset-source/에서 복원되는 이미지 (원본은 asset-source/에 Base64로 보관)
+/dist/assets/breeds-c.png
+/dist/assets/breeds-d.png
+/dist/assets/breeds-e.png
+/dist/assets/cover-v08.png
+/dist/assets/events-atlas.png
+/dist/assets/life-atlas-a.png
+/dist/assets/life-atlas-b.png
+/dist/assets/photos/commons-105287353.jpg
+/dist/assets/photos/commons-105521729.jpg
+/dist/assets/photos/commons-108015706.jpg
+/dist/assets/photos/commons-10858886.jpg
+/dist/assets/photos/commons-112597677.jpg
+/dist/assets/photos/commons-124690524.jpg
+/dist/assets/photos/commons-140164402.png
+/dist/assets/photos/commons-147164393.jpg
+/dist/assets/photos/commons-147295451.jpg
+/dist/assets/photos/commons-147828521.jpg
+/dist/assets/photos/commons-150152263.jpg
+/dist/assets/photos/commons-166387333.png
+/dist/assets/photos/commons-170406137.jpg
+/dist/assets/photos/commons-175764862.jpg
+/dist/assets/photos/commons-175764918.jpg
+/dist/assets/photos/commons-176689996.jpg
+/dist/assets/photos/commons-178821357.jpg
+/dist/assets/photos/commons-27922325.jpg
+/dist/assets/photos/commons-2990319.jpg
+/dist/assets/photos/commons-3340371.jpg
+/dist/assets/photos/commons-7352894.jpg
+/dist/assets/photos/commons-81669441.jpg
+
+# 사진 수집 스크립트 임시 출력
+/tmp/
+
+# 기타
+node_modules/
+.DS_Store
+Thumbs.db
