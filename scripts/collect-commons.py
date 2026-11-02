@@ -43,6 +43,6 @@ with concurrent.futures.ThreadPoolExecutor(max_workers=3)as pool:
   # Keep at most 8 candidates per breed for visual review before serving.
   allphotos.extend(rows[:8])
 with concurrent.futures.ThreadPoolExecutor(max_workers=3)as pool:photos=[x for x in pool.map(download,allphotos)if x]
-(ROOT/'photo-candidates.json').write_text(json.dumps({'photos':photos,'errors':errors},ensure_ascii=False,indent=2))
+(ROOT/'data/photo-review/photo-candidates.json').write_text(json.dumps({'photos':photos,'errors':errors},ensure_ascii=False,indent=2))
 print('DOWNLOADED',len(photos),flush=True)
 for breed in queries:print('COUNT',breed,sum(x['breed']==breed for x in photos),flush=True)
