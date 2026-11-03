@@ -29,7 +29,7 @@
 
 지금은 배포된 주소가 없습니다 (GitHub Pages도 꺼져 있음). `dist/`가 그대로 정적 사이트라 어디든 올릴 수 있습니다.
 
-- **결정: Cloudflare Pages.** 3-3에서 쓸 Workers·D1과 같은 곳이라 나중에 옮길 필요가 없습니다.
+- **결정: Cloudflare (Workers 정적 자산으로 배포됨).** 주소는 https://dogs.getupvox0.workers.dev/ 입니다. Pages 대신 Worker로 만들어졌지만, 3-3에서 같은 Worker에 API를 붙이면 되므로 오히려 간단합니다. 3-3에서 쓸 Workers·D1과 같은 곳이라 나중에 옮길 필요가 없습니다.
 - 대안: GitHub Pages. 설정이 가장 간단하지만, 3-3에서 서버는 따로 두어야 합니다.
 - 배포 전에 할 일: `npm run build`(이미지 복원)를 배포 과정에 넣기, 공유 미리보기용 `og:image`·`og:title` 추가.
 
