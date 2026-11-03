@@ -94,7 +94,7 @@ test('a life with crossroads replays from its share link, and old links are refu
     again.log.map((e) => [e.day, e.id, e.text]),
     s.log.map((e) => [e.day, e.id, e.text]),
   );
-  const old = encodeLife(s).replace(/^v3./, 'v2.');
+  const old = encodeLife(s).replace(/^v4./, 'v3.');
   assert.throws(() => decodeLife(old));
 });
 
@@ -155,4 +155,85 @@ test('a waiting generated crossroad survives a save, and staying put never hurts
   choose(s, 'avoid', decisionUid(s));
   assert.ok(s.alive);
   assert.ok(!s.log.slice(before).some((e) => e.id === 'illness-onset'));
+});
+
+test('each turn moves the life and leaves the records later systems read', async () => {
+  const { applyTurn } = await import('../dist/life-turns.js');
+  const { lifeEntry, PATHS } = await import('../dist/collection.js');
+  const ctx = {
+    log: (s, id, text) => s.log.push({ day: s.day, id, text }),
+    remember: (s, id) => s.memories.push(id),
+  };
+  const street = () => {
+    const s = createLife(41, null, { birthMode: 'explore' });
+    s.home = 'street';
+    s.day = 400;
+    return s;
+  };
+  let s = street();
+  assert.ok(applyTurn(s, ['family', '따라갔다'], ctx));
+  assert.equal(s.home, 'family');
+  assert.equal(s.adoptionRoute, 'followed-home');
+  assert.equal(s.log.at(-1).id, 'adopt');
+  s = street();
+  assert.ok(applyTurn(s, ['caught', '잡혔다'], ctx));
+  assert.equal(s.home, 'shelter');
+  assert.equal(s.environmentModel.facility, 'shelter');
+  s = street();
+  assert.ok(applyTurn(s, ['rescued', '구조됐다'], ctx));
+  assert.equal(s.log.at(-1).id, 'rescued-shelter');
+  assert.ok(applyTurn(s, ['escaped', '빠져나왔다'], ctx));
+  assert.equal(s.home, 'street');
+  s = street();
+  s.home = 'family';
+  assert.ok(applyTurn(s, ['lost', '길을 잃었다'], ctx));
+  assert.equal(s.home, 'street');
+  assert.equal(s.story.lost, true);
+  assert.equal(s.story.returnHome, 'family');
+  // A turn that does not fit where the dog lives does nothing.
+  assert.equal(applyTurn(s, ['lost', '또'], ctx), false);
+  assert.equal(applyTurn(s, ['escaped', '?'], ctx), false);
+  // The book names these paths.
+  s.alive = false;
+  const e = lifeEntry(s);
+  assert.ok(PATHS.find((p) => p.id === 'lost').test(e));
+  assert.ok(restore(serialize(s)));
+});
+
+test('crossroads can turn lives: risky play changes homes more than staying put', () => {
+  const count = (pick) => {
+    let turns = 0;
+    for (let seed = 1; seed <= 80; seed++) {
+      const s = createLife(seed * 31, null, { birthMode: 'explore' });
+      acknowledgeBirth(s);
+      let k = 0;
+      while (s.alive) {
+        if (!s.pending) {
+          advance(s, 1);
+          continue;
+        }
+        k++;
+        const p = s.pending,
+          before = s.log.length;
+        const opt = p.id.startsWith('crossroad:')
+          ? pick(p.options)
+          : p.options[k % p.options.length];
+        choose(s, opt.id, decisionUid(s));
+        if (p.id.startsWith('crossroad:'))
+          turns += s.log
+            .slice(before)
+            .filter((e) =>
+              ['adopt', 'rescued-shelter', 'caught-shelter', 'gate-out', 'shelter-escape'].includes(
+                e.id,
+              ),
+            ).length;
+      }
+    }
+    return turns;
+  };
+  assert.equal(
+    count((o) => o.at(-1)),
+    0,
+  );
+  assert.ok(count((o) => o[0]) >= 15);
 });
