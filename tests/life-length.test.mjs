@@ -3,14 +3,14 @@ import assert from 'node:assert/strict';
 import { createLife, serialize, restore } from '../dist/engine.js';
 import { nextStoryBeat, beatDelay, LIFE_LENGTHS, lifeLength } from '../dist/story-runner.js';
 
-function watch(seed, length) {
+function watch(seed, length, speed = 1) {
   const s = createLife(seed);
   s.mode = 'observe';
   s.chronicle.preferences.lifeLength = length;
   let ms = 0,
     beats = 0;
   while (s.alive && beats < 20000) {
-    ms += beatDelay(nextStoryBeat(s), 1);
+    ms += beatDelay(nextStoryBeat(s), speed);
     beats++;
   }
   return { s, ms, beats };
@@ -60,4 +60,16 @@ test('life length defaults to normal and is checked on restore', () => {
   assert.equal(lifeLength(restore(serialize(s))), 'long');
   s.chronicle.preferences.lifeLength = 'forever';
   assert.throws(() => restore(serialize(s)));
+});
+
+test('short stays shorter than normal at every speed', () => {
+  for (const speed of [1, 2, 4, 8]) {
+    let short = 0,
+      normal = 0;
+    for (let seed = 1; seed <= 6; seed++) {
+      short += watch(seed, 'short', speed).ms;
+      normal += watch(seed, 'normal', speed).ms;
+    }
+    assert.ok(short < normal, `${speed}x: ${short} vs ${normal}`);
+  }
 });

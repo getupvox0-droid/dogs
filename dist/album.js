@@ -29,7 +29,8 @@ export function companionAlbum(s, limit = 12) {
     .filter((r) => r.contacts > 0)
     .map((r) => {
       const first = firstMet(s, r),
-        last = r.lastContact ?? s.day,
+        // Relations from older saves may lack a last contact; never stretch them to the end of life.
+        last = r.lastContact ?? first ?? s.day,
         untilEnd = !s.alive && r.active && last >= s.day - 30;
       return {
         id: r.id,
@@ -40,28 +41,30 @@ export function companionAlbum(s, limit = 12) {
         last,
         untilEnd,
         contacts: r.contacts,
+        // Days spent within reach: daily kinds count shared days, others about a week per meeting.
+        nearDays: DAILY.includes(r.kind)
+          ? r.contacts
+          : Math.min(last - (first ?? last) + 1, r.contacts * 7),
         together: DAILY.includes(r.kind)
           ? `함께한 날 ${r.contacts}일`
           : `만난 횟수 ${r.contacts}번`,
         span:
           first == null
             ? `마지막으로 함께한 때 · ${ageText(last)}`
-            : `${ageText(first)}부터 ${untilEnd ? '마지막까지' : ageText(last) + '까지'}`,
+            : r.lastContact == null
+              ? `${ageText(first)}에 처음 만남`
+              : `${ageText(first)}부터 ${untilEnd ? '마지막까지' : ageText(last) + '까지'}`,
         score: closeness(r),
       };
     })
     .sort((a, b) => b.score - a.score || b.contacts - a.contacts)
     .slice(0, limit);
 }
-// The one who stayed longest within reach: most shared days, ties broken by closeness.
+// The one who stayed longest within reach: most days near, ties broken by closeness.
 export function longestCompanion(s) {
-  const album = companionAlbum(s, Infinity);
   return (
-    album
+    companionAlbum(s, Infinity)
       .filter((e) => e.kind !== 'sibling')
-      .sort(
-        (a, b) =>
-          b.last - (b.first ?? b.last) - (a.last - (a.first ?? a.last)) || b.score - a.score,
-      )[0] || null
+      .sort((a, b) => b.nearDays - a.nearDays || b.score - a.score)[0] || null
   );
 }

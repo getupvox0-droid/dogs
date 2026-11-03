@@ -96,6 +96,7 @@ export function syncRelations(s) {
   }
   if (s.encounters) {
     const r = put('visitor-' + (s.visitorArea || s.areaId), 'visitor', '자주 찾아오는 사람');
+    if (s.encounters > r.contacts) r.lastContact = s.day;
     r.familiarity = Math.min(95, s.encounters * 18);
     r.trust = s.trust;
     r.contacts = s.encounters;

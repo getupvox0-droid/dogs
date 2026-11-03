@@ -2,6 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { createLife, advance, serialize, restore } from '../dist/engine.js';
 import { companionAlbum, longestCompanion, firstMet, KIND_NAMES } from '../dist/album.js';
+import { syncRelations } from '../dist/life-state.js';
 import { lifeEntry, parseCollection, addLife, emptyCollection } from '../dist/collection.js';
 
 function lived(seed) {
@@ -69,4 +70,37 @@ test('the book keeps each life’s longest companion and tolerates older entries
       .length,
     0,
   );
+});
+
+test('a visitor met a few times is not the longest companion of a whole life', () => {
+  const s = lived(3);
+  s.relations.push({
+    id: 'visitor-x',
+    kind: 'visitor',
+    name: '자주 찾아오는 사람',
+    area: s.areaId,
+    familiarity: 54,
+    trust: 70,
+    caution: 30,
+    conflict: 0,
+    contacts: 3,
+    lastContact: null,
+    firstContact: 90,
+    active: true,
+  });
+  const v = companionAlbum(s, Infinity).find((e) => e.id === 'visitor-x');
+  assert.equal(v.last, 90);
+  assert.equal(v.span, '3개월 0일에 처음 만남');
+  assert.ok(v.nearDays <= 21);
+  assert.notEqual(longestCompanion(s).id, 'visitor-x');
+});
+
+test('a visitor relation records when it was last met', () => {
+  const s = createLife(5);
+  advance(s, 40);
+  s.encounters = 2;
+  syncRelations(s);
+  const r = s.relations.find((r) => r.kind === 'visitor');
+  assert.equal(r.contacts, 2);
+  assert.equal(r.lastContact, s.day);
 });
