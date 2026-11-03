@@ -33,11 +33,13 @@ import { visualFor, diagramSvg, PHASE_NAMES } from './visuals.js';
 import { downloadLifeCard } from './share-card.js';
 import { josa } from './korean.js';
 import { createDailyLife, koreaDate } from './daily.js';
-import { canShare, encodeLife, replayLife } from './share.js';
+import { canShare, encodeLife, replayLife, lifeKey } from './share.js';
 import {
   gameMemorial,
   leftLives,
   listMemorials,
+  listLives,
+  listDays,
   leaveMemorial,
   lightCandle,
   reportMemorial,
@@ -150,13 +152,13 @@ function loadCollection() {
 // Adds a finished life to the collection book once per session; replacing by id keeps it idempotent.
 const recorded = new Set();
 function recordLife() {
-  if (!life || life.alive || viewingShared || recorded.has(life.lifeId)) return;
+  if (!life || life.alive || viewingShared || recorded.has(lifeKey(life))) return;
   try {
     localStorage.setItem(
       COLLECTION_KEY,
       JSON.stringify(addLife(loadCollection(), lifeEntry(life))),
     );
-    recorded.add(life.lifeId);
+    recorded.add(lifeKey(life));
   } catch {}
 }
 const pct = (x) => (x >= 0.1 ? `${Math.round(x * 100)}%` : `${(x * 100).toFixed(1)}%`);
@@ -801,18 +803,53 @@ function openCollection() {
   $('collection-screen').hidden = false;
   renderCollection();
 }
-// Rainbow Bridge Park: memorials people left. Shown newest first or one at random, never ranked.
-const park = { order: 'recent', next: null, draft: null, busy: false };
+// Rainbow Bridge Park and "함께 나눈 삶" share one screen. Both show newest first (or one at random
+// in the park) and never rank: no counts decide the order.
+const park = { space: 'park', order: 'recent', next: null, draft: null, busy: false };
+const SPACES = {
+  park: {
+    eyebrow: '작은 발자국 · 무지개다리 공원',
+    title: '무지개다리 공원',
+    intro:
+      '다 살아 본 강아지와 먼저 떠난 반려견을 기억하는 곳입니다. 촛불 수로 줄 세우지 않고, 남긴 순서대로만 보여 줍니다.',
+    recent: '최근에 남긴 순서',
+    empty: '아직 공원에 남은 강아지가 없습니다. 한 생을 마치면 이곳에 남길 수 있습니다.',
+  },
+  lives: {
+    eyebrow: '작은 발자국 · 함께 나눈 삶',
+    title: '함께 나눈 삶',
+    intro:
+      '다른 사람이 살아 본 삶과 한 줄 소감입니다. 오늘의 강아지를 고르면 같은 강아지로 태어나 서로 다르게 산 삶들이 모여 보입니다.',
+    recent: '최근에 나눈 삶',
+    empty:
+      '아직 나눈 삶이 없습니다. 한 생을 마치고 엔딩에서 "이 삶 나누기"를 누르면 이곳에 올라옵니다.',
+  },
+};
+const FORMS = {
+  game: ['이 강아지를 공원에 남깁니다', '남기는 한마디 (선택)', '공원에 남겼습니다.'],
+  real: ['떠난 반려견을 남깁니다', '남기는 한마디 (선택)', '공원에 남겼습니다.'],
+  shared: ['이 삶을 나눕니다', '한 줄 소감 (선택)', '삶을 나눴습니다.'],
+};
 function parkStatus(text) {
   $('park-status').textContent = text || '';
 }
 function parkDate(ms) {
   return new Date(ms).toLocaleDateString('ko-KR', { timeZone: 'Asia/Seoul' });
 }
+function dailyLabel(date) {
+  const [, m, d] = date.split('-').map(Number);
+  return `${m}월 ${d}일의 강아지`;
+}
 function parkCard(m, preview = false) {
   const li = el('li', null, m.kind === 'real' ? 'park-card real' : 'park-card');
   li.append(
-    el('span', m.kind === 'real' ? '함께 살았던 반려견' : '게임 속에서 살아 본 강아지', 'eyebrow'),
+    el(
+      'span',
+      { real: '함께 살았던 반려견', game: '게임 속에서 살아 본 강아지', shared: '함께 나눈 삶' }[
+        m.kind
+      ],
+      'eyebrow',
+    ),
     el('h3', m.name || m.breed),
   );
   if (m.kind === 'real') {
@@ -837,15 +874,21 @@ function parkCard(m, preview = false) {
   }
   if (m.message) li.append(el('blockquote', m.message, 'park-message'));
   if (preview) return li;
-  const foot = el('div', null, 'park-foot'),
-    candle = el('button', m.lit ? `촛불을 켰습니다 · ${m.candles}` : `촛불 켜기 · ${m.candles}`);
-  candle.disabled = m.lit;
-  candle.onclick = () =>
-    parkAction(async () => {
-      Object.assign(m, await lightCandle(m.id, $('park-turnstile')));
-      li.replaceWith(parkCard(m));
-    });
-  foot.append(el('small', `${parkDate(m.createdAt)}에 남김`), candle);
+  const foot = el('div', null, 'park-foot');
+  foot.append(el('small', `${parkDate(m.createdAt)}에 ${m.kind === 'shared' ? '나눔' : '남김'}`));
+  if (m.kind !== 'shared') {
+    const candle = el(
+      'button',
+      m.lit ? `촛불을 켰습니다 · ${m.candles}` : `촛불 켜기 · ${m.candles}`,
+    );
+    candle.disabled = m.lit;
+    candle.onclick = () =>
+      parkAction(async () => {
+        Object.assign(m, await lightCandle(m.id, $('park-turnstile')));
+        li.replaceWith(parkCard(m));
+      });
+    foot.append(candle);
+  }
   if (m.code) {
     const again = el('button', '이 삶 다시 보기');
     again.onclick = () => {
@@ -860,7 +903,14 @@ function parkCard(m, preview = false) {
   if (m.mine) {
     const del = el('button', '내가 남긴 기록 지우기', 'text-button');
     del.onclick = () => {
-      if (!confirm('공원에서 이 기록을 지울까요? 켜진 촛불도 함께 사라집니다.')) return;
+      if (
+        !confirm(
+          m.kind === 'shared'
+            ? '나눈 삶을 지울까요?'
+            : '공원에서 이 기록을 지울까요? 켜진 촛불도 함께 사라집니다.',
+        )
+      )
+        return;
       parkAction(async () => {
         await removeMemorial(m.id);
         li.remove();
@@ -898,40 +948,69 @@ async function parkAction(work) {
     park.busy = false;
   }
 }
+// order: 'recent', 'random' (park only) or a daily date (shared lives only).
 function loadPark(order, more = false) {
   park.order = order;
   $('park-recent').className = order === 'recent' ? 'primary' : '';
   $('park-random').className = order === 'random' ? 'primary' : '';
+  for (const chip of $('park-days').children)
+    chip.className = chip.dataset.daily === order ? 'chip seen' : 'chip';
   if (!more) $('park-list').replaceChildren();
   $('park-more').hidden = true;
   return parkAction(async () => {
-    const r = await listMemorials(order, more ? park.next : null);
+    const cursor = more ? park.next : null,
+      r =
+        park.space === 'lives'
+          ? await listLives(order === 'recent' ? null : order, cursor)
+          : await listMemorials(order, cursor);
     park.next = r.next;
     $('park-list').append(...r.memorials.map((m) => parkCard(m)));
     $('park-more').hidden = !r.next;
-    if (!more && !r.memorials.length)
-      return '아직 공원에 남은 강아지가 없습니다. 한 생을 마치면 이곳에 남길 수 있습니다.';
+    if (!more && !r.memorials.length) return SPACES[park.space].empty;
+    if (!more && order !== 'recent' && order !== 'random')
+      return `${dailyLabel(order)}로 태어난 삶들입니다. 같은 시작에서 서로 다른 선택을 했습니다.`;
   });
 }
+async function loadDays() {
+  const box = $('park-days');
+  box.replaceChildren();
+  try {
+    const { days } = await listDays();
+    for (const d of days) {
+      const chip = el('button', `${dailyLabel(d.daily)} · ${d.lives}개의 삶`, 'chip');
+      chip.dataset.daily = d.daily;
+      chip.onclick = () => loadPark(d.daily);
+      box.append(chip);
+    }
+    box.hidden = !days.length;
+    for (const chip of box.children)
+      chip.className = chip.dataset.daily === park.order ? 'chip seen' : 'chip';
+  } catch {
+    box.hidden = true;
+  }
+}
 function parkForm(kind) {
-  const game = kind === 'game',
-    max = PARK_LIMITS.message[kind];
-  park.draft = game
-    ? { body: gameMemorial(life), lifeId: String(life.lifeId || life.seed) }
-    : { body: { kind: 'real' }, lifeId: null };
+  const fromLife = kind !== 'real',
+    max = PARK_LIMITS.message[kind],
+    [title, label] = FORMS[kind];
+  park.draft = fromLife
+    ? {
+        body: gameMemorial(life, kind),
+        leftKey: `${kind === 'shared' ? 'shared:' : ''}${lifeKey(life)}`,
+      }
+    : { body: { kind: 'real' }, leftKey: null };
   $('park-form').hidden = false;
-  $('park-form-title').textContent = game
-    ? '이 강아지를 공원에 남깁니다'
-    : '떠난 반려견을 남깁니다';
-  $('park-real-fields').hidden = game;
+  $('park-form-title').textContent = title;
+  $('park-message-label').textContent = label;
+  $('park-real-fields').hidden = fromLife;
   $('park-preview').replaceChildren();
-  if (game) $('park-preview').append(parkCard(park.draft.body, true));
+  if (fromLife) $('park-preview').append(parkCard(park.draft.body, true));
   for (const id of ['park-message', 'park-name', 'park-breed', 'park-born', 'park-departed'])
     $(id).value = '';
   $('park-message').maxLength = max;
   $('park-count').textContent = `0 / ${max}`;
 }
-function openPark(kind = null) {
+function openPark(space = 'park', kind = null, order = 'recent') {
   running = false;
   for (const id of [
     'intro',
@@ -942,14 +1021,26 @@ function openPark(kind = null) {
     'collection-screen',
   ])
     $(id).hidden = true;
+  const text = SPACES[space];
+  park.space = space;
+  $('park-eyebrow').textContent = text.eyebrow;
+  $('park-title').textContent = text.title;
+  $('park-intro').textContent = text.intro;
+  $('park-recent').textContent = text.recent;
+  $('park-random').hidden = space !== 'park';
+  $('park-real').hidden = space !== 'park';
+  $('park-days').hidden = true;
   $('park-screen').hidden = false;
   $('park-form').hidden = true;
   park.draft = null;
   parkStatus('');
   if (kind) parkForm(kind);
-  loadPark('recent');
+  park.order = order;
+  if (space === 'lives') loadDays();
+  loadPark(order);
 }
-$('park-open').onclick = () => openPark();
+$('park-open').onclick = () => openPark('park');
+$('lives-open').onclick = () => openPark('lives');
 $('park-home').onclick = goHome;
 $('park-recent').onclick = () => loadPark('recent');
 $('park-random').onclick = () => loadPark('random');
@@ -971,36 +1062,47 @@ $('park-form').onsubmit = async (event) => {
     const v = $(id).value.trim();
     return v ? Number(v) : null;
   };
-  const body =
-    d.body.kind === 'game'
-      ? { ...d.body, message: $('park-message').value }
-      : {
-          kind: 'real',
-          name: $('park-name').value,
-          breed: $('park-breed').value,
-          born: year('park-born'),
-          departed: year('park-departed'),
-          message: $('park-message').value,
-        };
+  const kind = d.body.kind,
+    body =
+      kind === 'real'
+        ? {
+            kind: 'real',
+            name: $('park-name').value,
+            breed: $('park-breed').value,
+            born: year('park-born'),
+            departed: year('park-departed'),
+            message: $('park-message').value,
+          }
+        : { ...d.body, message: $('park-message').value };
   const left = await parkAction(async () => {
-    await leaveMemorial(body, $('park-turnstile'), d.lifeId);
+    await leaveMemorial(body, $('park-turnstile'), d.leftKey);
     $('park-form').hidden = true;
     park.draft = null;
   });
-  if (left && (await loadPark('recent'))) parkStatus('공원에 남겼습니다.');
+  if (!left) return;
+  // A shared daily dog opens on its day, next to the others born the same day.
+  const order = kind === 'shared' && body.daily ? body.daily : 'recent';
+  if (park.space === 'lives') await loadDays();
+  if (await loadPark(order)) parkStatus(FORMS[kind][2]);
 };
-$('ending-park').onclick = () => {
+// Leaving from the ending: only lives played on this device, never one opened from a link.
+function leaveFromEnding(space, kind, again) {
   if (viewingShared) {
-    alert('공유받은 삶은 공원에 남길 수 없습니다. 직접 살아 본 삶만 남길 수 있습니다.');
+    alert('공유받은 삶은 남기거나 나눌 수 없습니다. 직접 살아 본 삶만 올릴 수 있습니다.');
     return;
   }
-  if (
-    leftLives().includes(String(life.lifeId || life.seed)) &&
-    !confirm('이 강아지는 이미 공원에 남겼습니다. 한 번 더 남길까요?')
-  )
+  if (kind === 'shared' && !canShare(life)) {
+    alert('이 삶은 공유 링크 기능이 생기기 전에 시작해서 나눌 수 없습니다.');
     return;
-  openPark('game');
-};
+  }
+  const key = `${kind === 'shared' ? 'shared:' : ''}${lifeKey(life)}`;
+  if (leftLives().includes(key) && !confirm(again)) return;
+  openPark(space, kind);
+}
+$('ending-park').onclick = () =>
+  leaveFromEnding('park', 'game', '이 강아지는 이미 공원에 남겼습니다. 한 번 더 남길까요?');
+$('ending-lives').onclick = () =>
+  leaveFromEnding('lives', 'shared', '이 삶은 이미 나눴습니다. 한 번 더 나눌까요?');
 $('collection-open').onclick = openCollection;
 $('ending-collection').onclick = openCollection;
 $('collection-home').onclick = goHome;

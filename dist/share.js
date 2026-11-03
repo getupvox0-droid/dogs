@@ -28,6 +28,15 @@ function unpackTrail(text, length) {
 }
 // Fields are joined with '.', which encodeURIComponent leaves alone.
 const enc = (x) => encodeURIComponent(x).replace(/\./g, '%2E');
+// Which life this is, for the book and the park. Everyone's daily dog shares one lifeId, so a daily
+// life is told apart by its choices (the share code); the same choices make the same life anyway.
+export function lifeKey(s) {
+  const id = String(s.lifeId || s.seed);
+  if (!s.daily || !canShare(s)) return id;
+  let h = 0x811c9dc5;
+  for (const ch of encodeLife(s)) h = Math.imul(h ^ ch.charCodeAt(0), 0x01000193);
+  return `${id}-${(h >>> 0).toString(36)}`;
+}
 export function canShare(s) {
   return !s.alive && Array.isArray(s.trail) && !!s.chronicle?.birthDate;
 }

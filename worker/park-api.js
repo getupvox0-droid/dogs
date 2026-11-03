@@ -1,6 +1,6 @@
 // Rainbow Bridge Park API on D1. Every write needs a Turnstile token and a device id from the page;
 // the device id is only stored as a salted hash, and no IP address is kept.
-import { PARK_LIMITS, validateMemorial } from '../dist/park.js';
+import { PARK_LIMITS, SPACE_KINDS, validateMemorial } from '../dist/park.js';
 
 const SCHEMA = [
   `CREATE TABLE IF NOT EXISTS memorials (
@@ -121,31 +121,41 @@ export async function handlePark(req, env, now = Date.now()) {
   if (path === '/api/memorials' && method === 'GET') {
     if (url.searchParams.get('order') === 'random') {
       const row = await db
-        .prepare(`SELECT * FROM memorials WHERE status = 'shown' ORDER BY RANDOM() LIMIT 1`)
+        .prepare(
+          `SELECT * FROM memorials WHERE status = 'shown' AND kind IN ('game', 'real')
+           ORDER BY RANDOM() LIMIT 1`,
+        )
         .first();
       return json({ memorials: await withCandles(db, row ? [row] : [], device), next: null });
     }
-    const [at, id] = (url.searchParams.get('cursor') || '').split('_'),
-      size = PARK_LIMITS.pageSize,
-      stmt = at
-        ? db
-            .prepare(
-              `SELECT * FROM memorials WHERE status = 'shown' AND (created_at < ? OR (created_at = ? AND id < ?))
-               ORDER BY created_at DESC, id DESC LIMIT ?`,
-            )
-            .bind(Number(at) || 0, Number(at) || 0, id || '', size + 1)
-        : db
-            .prepare(
-              `SELECT * FROM memorials WHERE status = 'shown' ORDER BY created_at DESC, id DESC LIMIT ?`,
-            )
-            .bind(size + 1);
-    const { results } = await stmt.all(),
-      rows = results.slice(0, size),
-      last = rows.at(-1);
-    return json({
-      memorials: await withCandles(db, rows, device),
-      next: results.length > size ? `${last.created_at}_${last.id}` : null,
-    });
+    return json(await page(db, `kind IN ('game', 'real')`, [], url, device));
+  }
+  // "함께 나눈 삶": shared lives, newest first; ?daily=YYYY-MM-DD keeps one day's daily dog.
+  if (path === '/api/lives' && method === 'GET') {
+    const daily = url.searchParams.get('daily');
+    if (daily && !/^\d{4}-\d{2}-\d{2}$/.test(daily)) return fail(400, '날짜 형식이 맞지 않습니다.');
+    return json(
+      daily
+        ? await page(
+            db,
+            `kind = 'shared' AND json_extract(data, '$.daily') = ?`,
+            [daily],
+            url,
+            device,
+          )
+        : await page(db, `kind = 'shared'`, [], url, device),
+    );
+  }
+  // Days whose daily dog has shared lives, newest day first (not by how many).
+  if (path === '/api/lives/days' && method === 'GET') {
+    const { results } = await db
+      .prepare(
+        `SELECT json_extract(data, '$.daily') AS daily, COUNT(*) AS lives FROM memorials
+         WHERE status = 'shown' AND kind = 'shared' AND json_extract(data, '$.daily') IS NOT NULL
+         GROUP BY daily ORDER BY daily DESC LIMIT 14`,
+      )
+      .all();
+    return json({ days: results });
   }
 
   if (path.startsWith('/api/admin/')) {
@@ -187,12 +197,22 @@ export async function handlePark(req, env, now = Date.now()) {
     const v = validateMemorial(body);
     if (v.error) return fail(400, v.error);
     if (!(await human(body.turnstile, env))) return fail(403, '사람 확인을 통과하지 못했습니다.');
-    const recent = await db
-      .prepare(`SELECT COUNT(*) AS n FROM memorials WHERE device_hash = ? AND created_at > ?`)
-      .bind(device, now - DAY)
-      .first();
+    // The park and the shared lives each allow a few posts a day per device.
+    const space = SPACE_KINDS.park.includes(v.kind) ? SPACE_KINDS.park : SPACE_KINDS.lives,
+      recent = await db
+        .prepare(
+          `SELECT COUNT(*) AS n FROM memorials WHERE device_hash = ? AND created_at > ?
+           AND kind IN (${space.map(() => '?').join(',')})`,
+        )
+        .bind(device, now - DAY, ...space)
+        .first();
     if (recent.n >= PARK_LIMITS.dailyPosts)
-      return fail(429, `한 기기에서 하루에 ${PARK_LIMITS.dailyPosts}마리까지 남길 수 있습니다.`);
+      return fail(
+        429,
+        space === SPACE_KINDS.park
+          ? `한 기기에서 하루에 ${PARK_LIMITS.dailyPosts}마리까지 남길 수 있습니다.`
+          : `한 기기에서 하루에 ${PARK_LIMITS.dailyPosts}번까지 나눌 수 있습니다.`,
+      );
     const newIdValue = newId();
     await db
       .prepare(
@@ -216,6 +236,7 @@ export async function handlePark(req, env, now = Date.now()) {
   const body = (await readBody(req)) || {};
   if (!(await human(body.turnstile, env))) return fail(403, '사람 확인을 통과하지 못했습니다.');
   if (action === 'candle') {
+    if (row.kind === 'shared') return fail(400, '촛불은 공원의 강아지에게만 켭니다.');
     const r = await db
       .prepare(
         `INSERT OR IGNORE INTO candles (memorial_id, device_hash, created_at) VALUES (?, ?, ?)`,
@@ -243,6 +264,25 @@ export async function handlePark(req, env, now = Date.now()) {
       .bind(PARK_LIMITS.reportsToHide, id)
       .run();
   return json({ ok: true });
+}
+// One page of shown rows matching `where`, newest first, continuing after ?cursor=created_id.
+async function page(db, where, binds, url, device) {
+  const [at, id] = (url.searchParams.get('cursor') || '').split('_'),
+    size = PARK_LIMITS.pageSize,
+    after = at ? ' AND (created_at < ? OR (created_at = ? AND id < ?))' : '',
+    { results } = await db
+      .prepare(
+        `SELECT * FROM memorials WHERE status = 'shown' AND ${where}${after}
+         ORDER BY created_at DESC, id DESC LIMIT ?`,
+      )
+      .bind(...binds, ...(at ? [Number(at) || 0, Number(at) || 0, id || ''] : []), size + 1)
+      .all(),
+    rows = results.slice(0, size),
+    last = rows.at(-1);
+  return {
+    memorials: await withCandles(db, rows, device),
+    next: results.length > size ? `${last.created_at}_${last.id}` : null,
+  };
 }
 async function removeMemorial(db, id) {
   await db.batch([

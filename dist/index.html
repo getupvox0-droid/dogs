@@ -48,7 +48,8 @@
               ><button id="birth-daily">오늘의 강아지로 태어나기</button
               ><button id="resume" hidden>이어서 살기</button
               ><button id="collection-open">도감</button
-              ><button id="park-open">무지개다리 공원</button>
+              ><button id="park-open">무지개다리 공원</button
+              ><button id="lives-open">함께 나눈 삶</button>
             </div>
             <small>12개 국가 · 랜덤 외형 · 제작한 성장 컷과 기억</small>
             <small id="daily-note"
@@ -197,6 +198,7 @@
           ><button id="ending-share">이미지 카드 저장</button
           ><button id="ending-link">공유 링크 복사</button
           ><button id="ending-park">공원에 남기기</button
+          ><button id="ending-lives">이 삶 나누기</button
           ><button id="ending-collection">도감 보기</button
           ><button id="new-life">새로운 삶 시작</button>
         </div>
@@ -212,19 +214,17 @@
       </section>
       <section id="park-screen" class="cinematic" hidden aria-labelledby="park-title">
         <div class="cinematic-top">
-          <span class="eyebrow">작은 발자국 · 무지개다리 공원</span
+          <span class="eyebrow" id="park-eyebrow">작은 발자국 · 무지개다리 공원</span
           ><button id="park-home">처음으로</button>
         </div>
         <h1 id="park-title">무지개다리 공원</h1>
-        <p class="muted">
-          다 살아 본 강아지와 먼저 떠난 반려견을 기억하는 곳입니다. 촛불 수로 줄 세우지 않고, 남긴
-          순서대로만 보여 줍니다.
-        </p>
+        <p class="muted" id="park-intro"></p>
         <div class="actions">
           <button id="park-recent">최근에 남긴 순서</button
           ><button id="park-random">아무나 한 마리</button
           ><button id="park-real">떠난 반려견 남기기</button>
         </div>
+        <div id="park-days" class="chips" hidden></div>
         <form id="park-form" class="park-form" hidden>
           <h2 id="park-form-title"></h2>
           <div id="park-preview"></div>
@@ -245,7 +245,9 @@
             </div>
           </div>
           <label
-            ><span>남기는 한마디 (선택) <small id="park-count"></small></span
+            ><span
+              ><span id="park-message-label">남기는 한마디 (선택)</span>
+              <small id="park-count"></small></span
             ><textarea id="park-message" rows="3"></textarea>
           </label>
           <p class="muted small">

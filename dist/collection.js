@@ -3,6 +3,7 @@
 import { BREED_IMAGES } from './visuals.js';
 import { cleanName } from './engine.js';
 import { longestCompanion } from './album.js';
+import { lifeKey } from './share.js';
 
 export const COLLECTION_KEY = 'dogs-life-collection';
 export const COLLECTION_MAX = 200;
@@ -86,7 +87,7 @@ export function lifeEntry(s) {
   if (s.alive) throw Error('아직 살아 있는 생애');
   const b = s.chronicle.birth;
   return {
-    lifeId: String(s.lifeId || s.seed),
+    lifeId: lifeKey(s),
     name: s.name ? cleanName(s.name) || null : null,
     breed: s.breed,
     lookId: s.appearance?.lookId || null,
