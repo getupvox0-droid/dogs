@@ -33,6 +33,7 @@ import { visualFor, diagramSvg, PHASE_NAMES } from './visuals.js';
 import { downloadLifeCard } from './share-card.js';
 import { josa } from './korean.js';
 import { createDailyLife, koreaDate } from './daily.js';
+import { canShare, encodeLife, replayLife } from './share.js';
 import { KIND_NAMES, companionAlbum, longestCompanion } from './album.js';
 import { UK_REFERENCE } from './statistics.js';
 import { resolveChoice, playbackTick } from './playback.js';
@@ -45,6 +46,7 @@ import {
   setName,
   cleanName,
   COUNTRIES,
+  acknowledgeBirth,
 } from './engine.js';
 import { initLifeState, syncRelations } from './life-state.js';
 import { decisionUid, currentSituation, importantRecords, eventKind } from './decisions.js';
@@ -138,7 +140,7 @@ function loadCollection() {
 // Adds a finished life to the collection book once per session; replacing by id keeps it idempotent.
 const recorded = new Set();
 function recordLife() {
-  if (!life || life.alive || recorded.has(life.lifeId)) return;
+  if (!life || life.alive || viewingShared || recorded.has(life.lifeId)) return;
   try {
     localStorage.setItem(
       COLLECTION_KEY,
@@ -168,8 +170,17 @@ function resetClock() {
 function status(t) {
   $('status').textContent = t;
 }
+// A life opened from someone's share link is read-only: it is never saved or added to the book.
+let viewingShared = false;
+function leaveShared() {
+  if (!viewingShared) return;
+  viewingShared = false;
+  life = null;
+  $('shared-note').hidden = true;
+  history.replaceState?.(null, '', location.pathname + location.search);
+}
 function save() {
-  if (!life) return;
+  if (!life || viewingShared) return;
   try {
     localStorage.setItem(key, serialize(life));
     $('resume').hidden = false;
@@ -629,11 +640,19 @@ function open() {
 }
 // Starts a new life from `make(profile)`; the current life is replaced only after confirming.
 function beginLife(make) {
+  let current = life;
+  if (viewingShared)
+    try {
+      current = restore(localStorage.getItem(key));
+    } catch {
+      current = null;
+    }
   if (
-    life?.alive &&
+    current?.alive &&
     !confirm('현재 삶 대신 새 삶을 시작할까요? 기록이 필요하면 먼저 내보내 주세요.')
   )
     return;
+  leaveShared();
   if (resultTimer) clearTimeout(resultTimer);
   resultTimer = null;
   replay = null;
@@ -656,6 +675,7 @@ $('birth').onclick = () =>
   });
 $('birth-daily').onclick = () => beginLife(() => createDailyLife(koreaDate()));
 $('resume').onclick = () => {
+  leaveShared();
   try {
     life = restore(localStorage.getItem(key));
     open();
@@ -671,6 +691,7 @@ function goHome() {
   if (resultTimer) clearTimeout(resultTimer);
   resultTimer = null;
   save();
+  leaveShared();
   closeModal();
   for (const id of ['game', 'birth-screen', 'ending-screen', 'replay-screen', 'collection-screen'])
     $(id).hidden = true;
@@ -1267,24 +1288,7 @@ function renderReplay() {
 }
 $('start-life').onclick = () => {
   setName(life, $('dog-name').value);
-  life.chronicle.phase = 'living';
-  life.chronicle.birthAcknowledged = true;
-  const b = life.chronicle.birth;
-  if (b.father.known && !life.relations.some((r) => r.id === 'father'))
-    life.relations.push({
-      id: 'father',
-      kind: 'father',
-      name: '아비',
-      area: life.areaId,
-      familiarity: b.father.together ? 30 : 0,
-      trust: b.father.together ? 35 : 0,
-      caution: 20,
-      conflict: 0,
-      contacts: b.father.together ? 1 : 0,
-      lastContact: b.father.together ? 0 : null,
-      active: b.father.together,
-      details: `출생 당시 ${b.father.ageYears}살 · ${b.father.breed}`,
-    });
+  acknowledgeBirth(life);
   save();
   clock = resetClock();
   nextBeatAt = performance.now() + 1600;
@@ -1325,6 +1329,40 @@ $('show-ending').onclick = () => {
   render();
 };
 $('ending-export').onclick = () => $('export').onclick();
+$('ending-link').onclick = async () => {
+  if (!canShare(life)) {
+    alert('이 삶은 공유 링크 기능이 생기기 전에 시작해서 링크를 만들 수 없습니다.');
+    return;
+  }
+  const url = `${location.origin}${location.pathname}#life=${encodeLife(life)}`;
+  try {
+    await navigator.clipboard.writeText(url);
+    status('공유 링크를 복사했습니다.');
+    alert('공유 링크를 복사했습니다. 받은 사람은 이 삶을 처음부터 다시 볼 수 있습니다.');
+  } catch {
+    prompt('이 링크를 복사해 보내 주세요.', url);
+  }
+};
+// Opens a shared life from the address (#life=…) as a read-only ending.
+function openSharedLink() {
+  const m = /^#life=(.+)$/.exec(globalThis.location?.hash || '');
+  if (!m) return;
+  try {
+    life = replayLife(m[1]);
+  } catch {
+    history.replaceState?.(null, '', location.pathname + location.search);
+    alert(
+      '이 링크의 삶을 열지 못했습니다. 다른 버전의 게임에서 만들어졌거나 주소가 잘렸을 수 있습니다.',
+    );
+    return;
+  }
+  viewingShared = true;
+  life.chronicle.phase = 'ending';
+  life.chronicle.endingSeen = false;
+  life.chronicle.endingPage = 0;
+  $('shared-note').hidden = false;
+  open();
+}
 $('ending-share').onclick = async () => {
   try {
     await downloadLifeCard(life);
@@ -1414,3 +1452,4 @@ window.addEventListener(
   },
   { passive: true },
 );
+openSharedLink();
