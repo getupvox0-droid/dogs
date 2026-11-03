@@ -92,7 +92,7 @@ test('reading gates include only actual new important events and never generic d
   assert.deepEqual(g.events, ['eyes']);
   s.chronicle.reading = g;
   assert.deepEqual(restore(serialize(s)).chronicle.reading, g);
-  assert.ok(readingMs('가'.repeat(10000)) <= 18000);
+  assert.ok(readingMs('가'.repeat(10000)) <= TIME_CONFIG.readMaxMs);
 });
 test('ending biography uses occurred events only, never invents adoption or a senior life', () => {
   const s = createLife(4);
