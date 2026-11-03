@@ -1,3 +1,4 @@
+import { josa } from './korean.js';
 import { mix } from './world.js';
 // Biology ranges are referenced separately from authored probabilities.
 // Intimacy is a social bond, not proof of mating or monogamy. No human marriage model.
@@ -143,9 +144,9 @@ export function familyScene(s) {
         ? '돌보는 사람이 지켜보는 운동장에'
         : '늘 쉬던 마당에';
   const texts = [
-    `${settings} ${c.name}가 있다. 며칠 전에도 만났던 몸짓이다. 내 쪽을 보더니 비스듬히 서서 기다린다.`,
-    `${settings} ${c.name}가 먼저 다가와 옆에 앉는다. 서로 가까이 있어도 몸에 힘이 들어가지 않는다.`,
-    `${settings} ${c.name}가 왔다. 내가 머물던 그늘 쪽에 몸을 낮춘다. 함께 쉬던 숨소리와 보폭이 익숙하다.`,
+    `${settings} ${josa(c.name, '이', '가')} 있다. 며칠 전에도 만났던 몸짓이다. 내 쪽을 보더니 비스듬히 서서 기다린다.`,
+    `${settings} ${josa(c.name, '이', '가')} 먼저 다가와 옆에 앉는다. 서로 가까이 있어도 몸에 힘이 들어가지 않는다.`,
+    `${settings} ${josa(c.name, '이', '가')} 왔다. 내가 머물던 그늘 쪽에 몸을 낮춘다. 함께 쉬던 숨소리와 보폭이 익숙하다.`,
   ];
   return {
     text: texts[stage],
@@ -181,7 +182,7 @@ export function familyChoice(s, p, id, { log, remember }) {
         'companion-result',
         accepted
           ? `${c.name} 옆에 몸을 낮춘다. 상대도 피하지 않고 자세를 바꿔 곁에 머문다. 한동안 움직이지 않고 함께 쉰다.`
-          : `${c.name}가 고개를 돌려 거리를 벌린다. 더 붙지 않고 옆으로 물러서자 둘 다 몸의 힘을 푼다.`,
+          : `${josa(c.name, '이', '가')} 고개를 돌려 거리를 벌린다. 더 붙지 않고 옆으로 물러서자 둘 다 몸의 힘을 푼다.`,
       );
     } else if (id === 'play') {
       c.bond = clamp(c.bond + 8);
@@ -189,7 +190,7 @@ export function familyChoice(s, p, id, { log, remember }) {
       log(
         s,
         'companion-result',
-        `${c.name}가 앞발을 내밀며 응한다. 번갈아 짧게 뛰다가 서로 멈춰 숨을 고른다.`,
+        `${josa(c.name, '이', '가')} 앞발을 내밀며 응한다. 번갈아 짧게 뛰다가 서로 멈춰 숨을 고른다.`,
       );
     } else if (id === 'walk') {
       c.bond = clamp(c.bond + 9);
@@ -197,7 +198,7 @@ export function familyChoice(s, p, id, { log, remember }) {
       log(
         s,
         'companion-result',
-        `${c.name}와 같은 방향으로 걷는다. 한쪽이 멈추면 다른 쪽도 멈추고 다시 보폭을 맞춘다.`,
+        `${josa(c.name, '과', '와')} 같은 방향으로 걷는다. 한쪽이 멈추면 다른 쪽도 멈추고 다시 보폭을 맞춘다.`,
       );
     } else {
       c.bond = clamp(c.bond + 4);
@@ -205,7 +206,7 @@ export function familyChoice(s, p, id, { log, remember }) {
       log(
         s,
         'companion-result',
-        `${c.name}와 조금 떨어져 몸을 누였다. 가까이 붙지 않아도 같은 공간에서 편히 쉰다.`,
+        `${josa(c.name, '과', '와')} 조금 떨어져 몸을 누였다. 가까이 붙지 않아도 같은 공간에서 편히 쉰다.`,
       );
     }
     remember(s, 'companion-familiar');
@@ -213,7 +214,7 @@ export function familyChoice(s, p, id, { log, remember }) {
       log(
         s,
         'companion-close',
-        `${c.name}가 보이면 먼저 걸음이 향한다. 함께 놀고 쉬는 상대가 생겼다.`,
+        `${josa(c.name, '이', '가')} 보이면 먼저 걸음이 향한다. 함께 놀고 쉬는 상대가 생겼다.`,
       );
       remember(s, 'close-companion');
     }
@@ -256,7 +257,7 @@ export function familyChoice(s, p, id, { log, remember }) {
       log(
         s,
         'parent-care',
-        `${r.companion?.name || '함께 지내는 개'}와 새끼들의 자리에서 조금 떨어져 머문다. 갑자기 파고들지 않고 작은 소리와 움직임을 살핀다.`,
+        `${josa(r.companion?.name || '함께 지내는 개', '과', '와')} 새끼들의 자리에서 조금 떨어져 머문다. 갑자기 파고들지 않고 작은 소리와 움직임을 살핀다.`,
       );
     }
     for (const child of r.children.filter((c) => c.litterId === latest.id && c.present)) {
@@ -297,8 +298,8 @@ export function conceive(s, { log, remember }) {
     s,
     'reproduction-encounter',
     carrier === 'self'
-      ? `${c.name}와 같은 공간에서 지내던 시기에 짝짓기가 있었다. 아직 몸의 변화는 느껴지지 않는다.`
-      : `함께 지내는 ${c.name}와 짝짓기가 있었다. 이후에도 각자의 잠자리에서 쉬고 함께 생활한다.`,
+      ? `${josa(c.name, '과', '와')} 같은 공간에서 지내던 시기에 짝짓기가 있었다. 아직 몸의 변화는 느껴지지 않는다.`
+      : `함께 지내는 ${josa(c.name, '과', '와')} 짝짓기가 있었다. 이후에도 각자의 잠자리에서 쉬고 함께 생활한다.`,
   );
   remember(s, 'reproductive-encounter');
   return true;
@@ -373,7 +374,7 @@ function birth(s, api) {
     'litter-born',
     isMother
       ? `조용한 자리에서 ${count}마리의 새끼가 태어났다. 눈을 감은 작은 몸들을 핥고 곁으로 모은다. 젖을 찾는 움직임과 가느다란 소리가 잠자리를 채운다.`
-      : `함께 지내던 ${c?.name || '암컷 개'}가 ${count}마리의 새끼를 낳았다. 나는 잠자리 바깥에서 작은 소리를 듣는다. 어미가 쉬는 쪽으로 갑자기 들어가지 않고 거리를 둔다.`,
+      : `함께 지내던 ${josa(c?.name || '암컷 개', '이', '가')} ${count}마리의 새끼를 낳았다. 나는 잠자리 바깥에서 작은 소리를 듣는다. 어미가 쉬는 쪽으로 갑자기 들어가지 않고 거리를 둔다.`,
   );
   if (isMother) {
     s.needs.fatigue = clamp(s.needs.fatigue + 15);
@@ -428,7 +429,7 @@ function childrenStep(s, { log, remember, decision }) {
           weaning:
             '젖을 찾는 시간이 줄고 그릇에서 먹는 시간이 늘었다. 먹고 나면 형제 곁으로 돌아가 쉰다.',
         }[id];
-        log(s, 'child-' + id, `${child.name}가 ${text}`);
+        log(s, 'child-' + id, `${josa(child.name, '이', '가')} ${text}`);
         remember(s, 'child-' + id);
       }
       if (n >= 28 && !litter.flags.play) {
@@ -450,7 +451,7 @@ function childrenStep(s, { log, remember, decision }) {
           s,
           'child-departure',
           s.home === 'street'
-            ? `${child.name}가 자주 머물던 구역을 벗어나 움직이기 시작했다. 예전 잠자리에서 함께 마주치는 날이 줄었다. 지금 어디서 지내는지는 알 수 없다.`
+            ? `${josa(child.name, '이', '가')} 자주 머물던 구역을 벗어나 움직이기 시작했다. 예전 잠자리에서 함께 마주치는 날이 줄었다. 지금 어디서 지내는지는 알 수 없다.`
             : `돌보는 사람이 ${child.name}의 담요를 이동장에 넣었다. 작은 몸이 새 거처로 옮겨 간 뒤 잠자리가 조금 넓어졌다. 떠난 방향을 살피다가 남아 있는 자리로 몸을 돌린다.`,
         );
         s.stress = clamp(s.stress + 2);
@@ -467,7 +468,7 @@ function childrenStep(s, { log, remember, decision }) {
           log(
             s,
             'child-reunion',
-            `${child.name}가 사람과 함께 잠깐 찾아왔다. 처음에는 서로 몸짓을 살피다가 가까이 머문다. 예전보다 커진 몸으로 짧게 함께 걷는다.`,
+            `${josa(child.name, '이', '가')} 사람과 함께 잠깐 찾아왔다. 처음에는 서로 몸짓을 살피다가 가까이 머문다. 예전보다 커진 몸으로 짧게 함께 걷는다.`,
           );
           child.contacts++;
           child.lastContact = s.day;
@@ -526,7 +527,7 @@ export function familyStep(s, api) {
         log(
           s,
           'child-separation',
-          `${child.name}와 지내던 곳에서 떨어졌다. 새끼가 있던 자리를 더는 직접 살필 수 없다.`,
+          `${josa(child.name, '과', '와')} 지내던 곳에서 떨어졌다. 새끼가 있던 자리를 더는 직접 살필 수 없다.`,
         );
         remember(s, 'offspring-separated');
       }
@@ -541,7 +542,7 @@ export function familyStep(s, api) {
     log(
       s,
       'companion-parting',
-      `${c.name}와 더는 같은 자리에서 마주치지 않는다. 함께 쉬던 자리를 지나 내 잠자리 쪽으로 돌아간다.`,
+      `${josa(c.name, '과', '와')} 더는 같은 자리에서 마주치지 않는다. 함께 쉬던 자리를 지나 내 잠자리 쪽으로 돌아간다.`,
     );
     remember(s, 'companion-absence');
   }
@@ -567,7 +568,7 @@ export function familyStep(s, api) {
     log(
       s,
       'companion-parting',
-      `${c.name}와 지내던 곳에서 멀어졌다. 전처럼 같은 자리에서 만나지는 못한다. 함께 쉬던 날들은 기억으로 남아 있다.`,
+      `${josa(c.name, '과', '와')} 지내던 곳에서 멀어졌다. 전처럼 같은 자리에서 만나지는 못한다. 함께 쉬던 날들은 기억으로 남아 있다.`,
     );
     s.stress = clamp(s.stress + 4);
     remember(s, 'companion-parting');
@@ -604,7 +605,7 @@ export function familyStep(s, api) {
         'pregnancy-nesting',
         p.carrier === 'self'
           ? '입과 앞발로 깔린 천을 모은다. 눕고 일어나기를 반복하며 조용한 안쪽 자리를 고른다.'
-          : `${c.name}가 천을 모아 안쪽에 눕는다. 나는 그 자리를 비워 주고 가까운 바깥쪽에서 쉰다.`,
+          : `${josa(c.name, '이', '가')} 천을 모아 안쪽에 눕는다. 나는 그 자리를 비워 주고 가까운 바깥쪽에서 쉰다.`,
       );
     }
     if (s.day >= p.due) {
@@ -709,7 +710,7 @@ export function familyStep(s, api) {
     log(
       s,
       'companion-recognized',
-      `${c.name}가 있는 쪽에서 걸음이 멈춘다. 여러 번 함께 놀고 쉬었던 상대를 알아보고 몸의 긴장을 푼다.`,
+      `${josa(c.name, '이', '가')} 있는 쪽에서 걸음이 멈춘다. 여러 번 함께 놀고 쉬었던 상대를 알아보고 몸의 긴장을 푼다.`,
     );
     syncFamily(s);
   }
@@ -733,7 +734,7 @@ export function familyStep(s, api) {
         log(
           s,
           'companion-shared-home',
-          `그동안 만나던 ${c.name}가 사람과 함께 집에 왔다. 돌보는 사람들이 생활공간을 준비했고, 각자의 그릇과 잠자리가 놓였다. 처음에는 떨어진 자리에서 쉬다가 차츰 같은 방에 머문다.`,
+          `그동안 만나던 ${josa(c.name, '이', '가')} 사람과 함께 집에 왔다. 돌보는 사람들이 생활공간을 준비했고, 각자의 그릇과 잠자리가 놓였다. 처음에는 떨어진 자리에서 쉬다가 차츰 같은 방에 머문다.`,
         );
         remember(s, 'shared-companion-home');
       }

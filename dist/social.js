@@ -1,3 +1,4 @@
+import { josa } from './korean.js';
 import { socialScene, resolveSocialScene } from './neighbors.js';
 import { memoryInfluence } from './life-state.js';
 import { mix } from './world.js';
@@ -95,7 +96,7 @@ export function meetFriend(s, id, log, remember, clamp) {
     log(
       s,
       'dog-friend',
-      `${f.name}와 ${f.meetings}번째 만남. ${id === 'retreat' ? '거리를 벌리자 상대도 멈췄다. 쫓기지 않고 각자 길로 간다.' : '바닥을 살피는 동안 상대가 천천히 지나갔다. 가까이 인사하지 않고 만남을 마쳤다.'}`,
+      `${josa(f.name, '과', '와')} ${f.meetings}번째 만남. ${id === 'retreat' ? '거리를 벌리자 상대도 멈췄다. 쫓기지 않고 각자 길로 간다.' : '바닥을 살피는 동안 상대가 천천히 지나갔다. 가까이 인사하지 않고 만남을 마쳤다.'}`,
     );
     return;
   }
@@ -121,7 +122,7 @@ export function meetFriend(s, id, log, remember, clamp) {
     log(
       s,
       'dog-friend',
-      `${f.name}와 ${f.meetings}번째 만남. 가까워지자 상대 몸이 굳었다. 더 다가가지 않고 거리를 벌리자 서로 다른 쪽으로 움직였다.`,
+      `${josa(f.name, '과', '와')} ${f.meetings}번째 만남. 가까워지자 상대 몸이 굳었다. 더 다가가지 않고 거리를 벌리자 서로 다른 쪽으로 움직였다.`,
     );
     return;
   }
@@ -159,8 +160,8 @@ export function meetFriend(s, id, log, remember, clamp) {
       '잠시 함께 걷다가 그늘에서 쉰다. 곁에 있어도 편안하다.',
       '친구가 내민 나뭇가지를 건드린다. 둘이 장난치다 나란히 앉는다.',
     ][n];
-  log(s, 'dog-friend', `${f.name}와 ${f.meetings}번째 만남. ${text}`);
+  log(s, 'dog-friend', `${josa(f.name, '과', '와')} ${f.meetings}번째 만남. ${text}`);
   const next = relationshipStage(f);
   if (previous !== next)
-    log(s, 'relationship-stage', `${f.name}와 ${next}가 되었다. (${f.bond}/100)`);
+    log(s, 'relationship-stage', `${josa(f.name, '과', '와')} ${next}가 되었다. (${f.bond}/100)`);
 }

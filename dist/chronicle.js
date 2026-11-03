@@ -178,7 +178,7 @@ export function biography(s) {
     lines.push('쉬어 가는 시간이 길어졌지만 함께했던 날들은 기록에 남았다.');
   if (!s.alive)
     lines.push(
-      `${ageText(s.day)}의 삶을 ${s.worldModel.context.label}에서 마쳤다. 기록된 원인은 ${s.cause || '확인되지 않음'}이다.`,
+      `${ageText(s.day)}의 삶을 ${s.worldModel.context.label}에서 마쳤다. 기록된 원인: ${s.cause || '확인되지 않음'}.`,
     );
   return lines.join('\n\n');
 }

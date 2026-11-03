@@ -1,3 +1,4 @@
+import { josa } from './korean.js';
 import { memoryBias } from './behavior.js';
 import { mix } from './world.js';
 export const SOCIAL_PURPOSES = [
@@ -380,7 +381,7 @@ export function socialScene(s) {
   s.neighborhood.recent = s.neighborhood.recent.slice(-12);
   s.neighborhood.counts[purpose] = (s.neighborhood.counts[purpose] || 0) + 1;
   return {
-    text: `${place}에서 ${a.coat}의 ${a.name}와 마주쳤다. ${spec.opening}`,
+    text: `${place}에서 ${a.coat}의 ${josa(a.name, '과', '와')} 마주쳤다. ${spec.opening}`,
     options: spec.options.map((o) => o.slice(0, 2)),
   };
 }
@@ -417,7 +418,7 @@ export function resolveSocialScene(s, id, log, remember, clamp) {
   log(
     s,
     'dog-friend',
-    `${a.name}와 ${f.meetings}번째 만남. ${o[2]}${positive ? '' : ' 잠시 뒤 상대가 거리를 벌려 오늘은 짧게 마쳤다.'}`,
+    `${josa(a.name, '과', '와')} ${f.meetings}번째 만남. ${o[2]}${positive ? '' : ' 잠시 뒤 상대가 거리를 벌려 오늘은 짧게 마쳤다.'}`,
   );
   Object.assign(s.log.at(-1), {
     actorId: a.id,

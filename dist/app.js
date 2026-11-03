@@ -31,6 +31,7 @@ import {
 import { TIME_CONFIG, clockState, clockDays, readingMs, readingGate } from './time-config.js';
 import { visualFor, diagramSvg, PHASE_NAMES } from './visuals.js';
 import { downloadLifeCard } from './share-card.js';
+import { josa } from './korean.js';
 import { UK_REFERENCE } from './statistics.js';
 import { resolveChoice, playbackTick } from './playback.js';
 import { lookOf, imageFor, photoLogIndices, atlasFrame } from './visuals.js';
@@ -146,11 +147,6 @@ function recordLife() {
 }
 const pct = (x) => (x >= 0.1 ? `${Math.round(x * 100)}%` : `${(x * 100).toFixed(1)}%`);
 const displayName = (s) => (s.name ? `${s.name} · ${s.breed}` : s.breed);
-// Picks the Korean particle by whether the last syllable has a final consonant (e.g. 보리는 / 밤톨은).
-function josa(word, withFinal, withoutFinal) {
-  const c = word.charCodeAt(word.length - 1) - 0xac00;
-  return word + (c >= 0 && c <= 11171 && c % 28 ? withFinal : withoutFinal);
-}
 const kindNames = {
   mother: '어미',
   father: '아비',
