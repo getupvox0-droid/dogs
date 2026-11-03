@@ -23,7 +23,7 @@ const ORDINARY = [
 export const LIFE_LENGTHS = {
   short: {
     label: '짧게',
-    note: '1배속 기준 약 15~20분 · 평범한 하루는 읽지 않고 지나갑니다.',
+    note: '1배속 기준 약 10~15분 · 평범한 하루는 읽지 않고 지나갑니다.',
     wait: 0.6,
   },
   normal: { label: '보통', note: '1배속 기준 약 25분', wait: 1 },
@@ -90,6 +90,14 @@ export function nextStoryBeat(
     .filter((e) => !short || !ORDINARY.includes(e.id))
     .map((e) => e.text)
     .join(' ');
+  // The text a reader must be given time for, whatever the speed. A short life only waits for
+  // important records, so grouping days never makes it slower than a normal life.
+  const readText = short
+    ? events
+        .filter(importantEvent)
+        .map((e) => e.text)
+        .join(' ')
+    : text;
   return {
     from,
     start,
@@ -98,6 +106,7 @@ export function nextStoryBeat(
     events,
     important,
     text,
+    readText,
     waitMs:
       LIFE_LENGTHS[length].wait *
       Math.max(
@@ -149,5 +158,6 @@ export function timelineEntries(s, { observe = simulationMode(s) === 'observe' }
 
 export function beatDelay(beat, speed = 1) {
   const scaled = Math.max(500, beat.waitMs / Math.max(1, Number(speed) || 1));
-  return beat.important || beat.text.length > 120 ? Math.max(scaled, readingMs(beat.text)) : scaled;
+  const read = beat.readText ?? beat.text;
+  return beat.important || read.length > 120 ? Math.max(scaled, readingMs(read)) : scaled;
 }
