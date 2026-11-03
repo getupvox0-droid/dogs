@@ -1,0 +1,17 @@
+# Cloudflare Pages response headers. File names are not hashed, so code must revalidate on each load.
+/*
+  X-Content-Type-Options: nosniff
+  Referrer-Policy: strict-origin-when-cross-origin
+  Permissions-Policy: camera=(), microphone=(), geolocation=()
+
+/*.js
+  Cache-Control: no-cache
+
+/*.css
+  Cache-Control: no-cache
+
+/data/*
+  Cache-Control: no-cache
+
+/assets/*
+  Cache-Control: public, max-age=86400
