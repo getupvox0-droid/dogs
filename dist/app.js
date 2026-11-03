@@ -55,6 +55,7 @@ import {
 } from './park-client.js';
 import { PARK_LIMITS } from './park.js';
 import { KIND_NAMES, companionAlbum, longestCompanion } from './album.js';
+import { traitsOf, shapingChoices } from './traits.js';
 import { UK_REFERENCE } from './statistics.js';
 import { resolveChoice, playbackTick } from './playback.js';
 import { lookOf, imageFor, photoLogIndices, atlasFrame } from './visuals.js';
@@ -520,6 +521,10 @@ function render() {
     $('mini-stats').append(metric(k, v, true));
   $('appearance').textContent = look?.label || '외형 기록';
   $('traits').textContent = `${life.sex} · ${life.temperament} · ${life.appearance.body}`;
+  // What its own choices left in it so far.
+  const marks = traitsOf(life);
+  $('marks').replaceChildren(...marks.map((t) => el('span', t.label, 'chip seen')));
+  $('marks').hidden = !marks.length;
   $('now-date').textContent =
     `${age(life.day)} · ${life.pending ? '선택 대기' : running ? '진행 중' : '멈춰 있음'}`;
   $('now-place').textContent = w.context.label;
@@ -1514,10 +1519,29 @@ function renderEnding() {
       ['최종 환경', data.place],
       ['살아온 날', `${life.day}일 · ${data.age}`],
       ['곁의 존재', data.relations.map((r) => r.name).join(', ') || '기록된 관계 없음'],
+      [
+        '남은 성격',
+        traitsOf(life)
+          .map((t) => t.label)
+          .join(', ') || '두드러진 흔적 없음',
+      ],
       ['남은 기록', `${life.log.length}개 기록 · 기억 ${life.memories.length}개`],
     ])
       facts.append(el('dt', k), el('dd', v));
     area.append(facts);
+    const shaped = shapingChoices(life);
+    if (shaped.length) {
+      const box = el('div', null, 'compare'),
+        list = el('ol', null, 'shaping');
+      box.append(el('h3', '이 아이를 만든 선택들'));
+      for (const c of shaped) {
+        const li = el('li', null, 'shaping-' + c.kind);
+        li.append(el('small', age(c.day)), el('strong', c.action), el('p', c.result));
+        list.append(li);
+      }
+      box.append(list);
+      area.append(box);
+    }
     if (life.daily) {
       const box = el('div', null, 'compare');
       box.append(

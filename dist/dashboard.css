@@ -1679,3 +1679,32 @@ details.note summary {
   font-size: 12px;
   color: #8a4b14;
 }
+/* What the dog's choices left: traits and the choices that shaped the life */
+#marks {
+  margin-top: 6px;
+}
+.shaping {
+  list-style: none;
+  padding: 0;
+  margin: 8px 0 0;
+  display: grid;
+  gap: 10px;
+}
+.shaping li {
+  border-left: 3px solid var(--line);
+  padding-left: 10px;
+}
+.shaping li strong,
+.shaping li small {
+  display: block;
+}
+.shaping li p {
+  margin: 2px 0 0;
+}
+.shaping .shaping-turn {
+  border-color: var(--green);
+}
+.shaping .shaping-hurt,
+.shaping .shaping-death {
+  border-color: #b5651d;
+}

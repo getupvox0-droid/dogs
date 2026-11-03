@@ -237,3 +237,31 @@ test('crossroads can turn lives: risky play changes homes more than staying put'
   );
   assert.ok(count((o) => o[0]) >= 15);
 });
+
+test('marks read as traits, and the ending can name the choices that shaped a life', async () => {
+  const { traitsOf, shapingChoices } = await import('../dist/traits.js');
+  const s = createLife(9);
+  s.crossroads.marks.push('traffic-wise', 'bold', 'road-wise');
+  s.crossroads.markDays = { bold: 50, 'traffic-wise': 90, 'road-wise': 120 };
+  // Two marks that mean the same show once, in the order they were gained.
+  assert.deepEqual(
+    traitsOf(s).map((t) => t.label),
+    ['대담함', '길 건너는 요령이 있음'],
+  );
+  let found = null;
+  for (let seed = 1; seed <= 60 && !found; seed++) {
+    const life = live(seed, (p) => p.options[0]);
+    const shaped = shapingChoices(life);
+    if (shaped.some((c) => c.kind === 'turn' || c.kind === 'hurt')) found = shaped;
+  }
+  assert.ok(found, 'some risky life has a shaping choice');
+  assert.ok(found.length <= 6);
+  for (const c of found) {
+    assert.ok(c.action && c.result);
+    assert.ok(['death', 'turn', 'hurt', 'mark'].includes(c.kind));
+  }
+  assert.deepEqual(
+    found.map((c) => c.day),
+    [...found.map((c) => c.day)].sort((a, b) => a - b),
+  );
+});
