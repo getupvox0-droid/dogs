@@ -242,7 +242,11 @@ export function storyStep(s, { log, remember, decision, random, clamp }) {
     const actor = s.neighborhood.animals.find((a) => a.id === s.friend.id);
     actor.asked ??= {};
     const key = s.currentEncounter.purpose;
-    if (actor.asked[key]) {
+    // Meeting the same dog is only the player's choice when it can change something: the first
+    // meeting and the turning points after it, at most four times a life. Other meetings follow
+    // the dog's habit and are simply recorded.
+    const turning = [0, 2, 5].includes(s.friend.meetings);
+    if (actor.asked[key] || !turning || (s.storyCounts['dog-meet'] || 0) >= 4) {
       meetFriend(s, p.options[s.stress > 65 ? p.options.length - 1 : 0][0], log, remember, clamp);
       return true;
     }

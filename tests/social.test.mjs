@@ -129,3 +129,33 @@ test('legacy friend of unknown location is archived, current save preserves acti
   meet(r);
   assert.deepEqual(restore(serialize(r)).friend, r.friend);
 });
+
+test('meeting the same dog asks the player only at turning points, at most four times a life', async () => {
+  const { createLife, advance, choose, acknowledgeBirth } = await import('../dist/engine.js');
+  const { decisionUid } = await import('../dist/decisions.js');
+  let asked = 0,
+    met = 0,
+    lives = 0;
+  for (let seed = 1; seed <= 30; seed++) {
+    const s = createLife(seed * 31, null, { birthMode: 'explore' });
+    acknowledgeBirth(s);
+    let k = 0,
+      here = 0;
+    while (s.alive) {
+      if (!s.pending) {
+        advance(s, 1);
+        continue;
+      }
+      if (s.pending.id === 'dog-meet') here++;
+      k++;
+      choose(s, s.pending.options[k % s.pending.options.length].id, decisionUid(s));
+    }
+    assert.ok(here <= 4, `seed ${seed}: ${here}`);
+    asked += here;
+    met += s.log.filter((e) => e.id === 'dog-friend').length;
+    lives++;
+  }
+  // Meetings still happen and are recorded; only the prompts are fewer.
+  assert.ok(met > asked);
+  assert.ok(asked / lives >= 1);
+});
