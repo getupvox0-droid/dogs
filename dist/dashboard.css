@@ -1542,3 +1542,107 @@ details.note summary {
   display: block;
   color: var(--muted);
 }
+/* Rainbow Bridge Park */
+.park-form {
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  background: var(--paper);
+  padding: 18px;
+  margin: 18px 0;
+  display: grid;
+  gap: 12px;
+  max-width: 640px;
+}
+.park-form h2 {
+  font-size: 18px;
+  margin: 0;
+}
+.park-form label {
+  display: grid;
+  gap: 4px;
+  font-size: 14px;
+}
+.park-form input,
+.park-form textarea {
+  width: 100%;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  padding: 8px 10px;
+  background: #fff;
+  font: inherit;
+  color: inherit;
+  resize: vertical;
+}
+.park-fields,
+.park-years {
+  display: grid;
+  gap: 12px;
+}
+.park-years {
+  grid-template-columns: 1fr 1fr;
+}
+.park-form .small {
+  font-size: 13px;
+  margin: 0;
+}
+.park-list {
+  list-style: none;
+  padding: 0;
+  margin: 16px 0;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 12px;
+}
+.park-card {
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  background: var(--paper);
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.park-card.real {
+  background: var(--soft);
+}
+.park-card h3 {
+  margin: 0;
+  font-size: 20px;
+}
+.park-card p {
+  margin: 0;
+}
+.park-card small {
+  color: var(--muted);
+}
+.park-last {
+  font-family: serif;
+  font-style: italic;
+  color: var(--green);
+}
+.park-message {
+  margin: 4px 0 0;
+  padding-left: 12px;
+  border-left: 3px solid var(--green);
+  white-space: pre-line;
+}
+.park-foot {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  margin-top: auto;
+  padding-top: 8px;
+}
+.park-foot small {
+  margin-right: auto;
+}
+.park-foot button {
+  font-size: 13px;
+  padding: 6px 10px;
+}
+#park-preview .park-card {
+  max-width: 420px;
+}

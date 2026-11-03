@@ -47,7 +47,8 @@
               <button class="primary" id="birth">새로운 삶으로 태어나기 ↗</button
               ><button id="birth-daily">오늘의 강아지로 태어나기</button
               ><button id="resume" hidden>이어서 살기</button
-              ><button id="collection-open">도감</button>
+              ><button id="collection-open">도감</button
+              ><button id="park-open">무지개다리 공원</button>
             </div>
             <small>12개 국가 · 랜덤 외형 · 제작한 성장 컷과 기억</small>
             <small id="daily-note"
@@ -195,6 +196,7 @@
           ><button id="ending-export">기록 파일 저장</button
           ><button id="ending-share">이미지 카드 저장</button
           ><button id="ending-link">공유 링크 복사</button
+          ><button id="ending-park">공원에 남기기</button
           ><button id="ending-collection">도감 보기</button
           ><button id="new-life">새로운 삶 시작</button>
         </div>
@@ -207,6 +209,58 @@
         <h1 id="collection-title">지나온 삶들</h1>
         <p id="collection-count" class="muted"></p>
         <div id="collection-content"></div>
+      </section>
+      <section id="park-screen" class="cinematic" hidden aria-labelledby="park-title">
+        <div class="cinematic-top">
+          <span class="eyebrow">작은 발자국 · 무지개다리 공원</span
+          ><button id="park-home">처음으로</button>
+        </div>
+        <h1 id="park-title">무지개다리 공원</h1>
+        <p class="muted">
+          다 살아 본 강아지와 먼저 떠난 반려견을 기억하는 곳입니다. 촛불 수로 줄 세우지 않고, 남긴
+          순서대로만 보여 줍니다.
+        </p>
+        <div class="actions">
+          <button id="park-recent">최근에 남긴 순서</button
+          ><button id="park-random">아무나 한 마리</button
+          ><button id="park-real">떠난 반려견 남기기</button>
+        </div>
+        <form id="park-form" class="park-form" hidden>
+          <h2 id="park-form-title"></h2>
+          <div id="park-preview"></div>
+          <div id="park-real-fields" class="park-fields">
+            <label>이름 <input id="park-name" maxlength="20" autocomplete="off" /></label>
+            <label
+              >품종이나 생김새 (선택) <input id="park-breed" maxlength="30" autocomplete="off"
+            /></label>
+            <div class="park-years">
+              <label
+                >태어난 해 (선택)
+                <input id="park-born" inputmode="numeric" maxlength="4" placeholder="2010"
+              /></label>
+              <label
+                >떠난 해 (선택)
+                <input id="park-departed" inputmode="numeric" maxlength="4" placeholder="2024"
+              /></label>
+            </div>
+          </div>
+          <label
+            ><span>남기는 한마디 (선택) <small id="park-count"></small></span
+            ><textarea id="park-message" rows="3"></textarea>
+          </label>
+          <p class="muted small">
+            링크와 연락처는 넣을 수 없고, 사진은 아직 받지 않습니다. 사람의 실명이나 개인 정보는
+            적지 말아 주세요. 남긴 기록은 이 기기에서 언제든 지울 수 있습니다.
+          </p>
+          <div class="actions">
+            <button type="submit" id="park-submit" class="primary">공원에 남기기</button
+            ><button type="button" id="park-cancel">그만두기</button>
+          </div>
+        </form>
+        <div id="park-turnstile"></div>
+        <p id="park-status" class="muted" role="status"></p>
+        <ol id="park-list" class="park-list"></ol>
+        <button id="park-more" hidden>더 보기</button>
       </section>
       <section id="replay-screen" class="cinematic" hidden>
         <div class="cinematic-top">

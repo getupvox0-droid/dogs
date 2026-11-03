@@ -1,0 +1,5 @@
+# Copy to .dev.vars for `npx wrangler dev`. These are Cloudflare's always-pass Turnstile test keys.
+TURNSTILE_SITE_KEY=1x00000000000000000000AA
+TURNSTILE_SECRET=1x0000000000000000000000000000000AA
+DEVICE_SALT=local-dev-salt
+ADMIN_TOKEN=local-admin
