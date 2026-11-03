@@ -1,3 +1,4 @@
+import { euro } from './korean.js';
 import { clinicalAccess, clinicVisit } from './people-world.js';
 // Narrative game model. Episode frequencies, causes and outcomes are authored,
 // not inferred cause-specific medical statistics or calibrated survival estimates.
@@ -202,7 +203,7 @@ export function healthStep(s, { log, random, decision }, risk) {
       log(
         s,
         'death',
-        `${TYPES[e.kind].cause}로 기력이 다했다. ${e.supported ? '곁의 기척을 느끼며' : '몸을 누인 자리에서'} 호흡이 천천히 멎었다.`,
+        `${euro(TYPES[e.kind].cause)} 기력이 다했다. ${e.supported ? '곁의 기척을 느끼며' : '몸을 누인 자리에서'} 호흡이 천천히 멎었다.`,
       );
     }
     return true;
