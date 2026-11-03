@@ -284,3 +284,14 @@ test('the park and shared lives have separate daily limits', async () => {
   assert.equal(over.status, 429);
   assert.match(over.body.error, /나눌 수/);
 });
+
+test('person-check errors say what went wrong and keep the code', async () => {
+  const { turnstileMessage } = await import('../dist/park-client.js');
+  assert.match(
+    turnstileMessage('110200'),
+    /주소가 사람 확인 설정에 등록되어 있지 않습니다.*오류 110200/,
+  );
+  assert.match(turnstileMessage('600010'), /브라우저 확인에 실패/);
+  assert.match(turnstileMessage('timeout'), /시간이 지났습니다/);
+  assert.match(turnstileMessage('300030'), /잠시 뒤 다시/);
+});
