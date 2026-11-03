@@ -92,6 +92,8 @@ test('event stepping and daily stepping produce identical raw physiology, risks 
     choice(b);
     nextStoryBeat(b, { maxDays: Math.min(60, a.day - b.day) });
   }
+  // A crossroad can end a life on the choice itself; b still has that choice waiting.
+  if (!a.alive && b.alive) choice(b);
   assert.equal(a.day, b.day);
   assert.equal(a.rng, b.rng);
   assert.deepEqual(a.log, b.log);
