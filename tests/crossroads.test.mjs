@@ -94,7 +94,7 @@ test('a life with crossroads replays from its share link, and old links are refu
     again.log.map((e) => [e.day, e.id, e.text]),
     s.log.map((e) => [e.day, e.id, e.text]),
   );
-  const old = encodeLife(s).replace(/^v5./, 'v4.');
+  const old = encodeLife(s).replace(/^v6./, 'v5.');
   assert.throws(() => decodeLife(old));
 });
 
@@ -264,4 +264,37 @@ test('marks read as traits, and the ending can name the choices that shaped a li
     found.map((c) => c.day),
     [...found.map((c) => c.day)].sort((a, b) => a - b),
   );
+});
+
+test('finding food on the street builds know-how that feeds a street pup more often', async () => {
+  const { physiologyStep } = await import('../dist/physiology.js');
+  const eatDays = (forage) => {
+    const s = createLife(77, null, { birthMode: 'explore' });
+    s.home = 'street';
+    s.day = 120;
+    s.crossroads.forage = forage;
+    let ate = 0;
+    for (let d = 0; d < 60; d++) {
+      s.day++;
+      const before = s.needs.hunger;
+      s.needs.hunger = 80;
+      physiologyStep(s, () => {});
+      if (s.needs.hunger < 80) ate++;
+      s.needs.hunger = before;
+    }
+    return ate;
+  };
+  assert.ok(eatDays(30) > eatDays(0));
+});
+
+test('new parts keep their rules: ice only in the cold, traps only where something is baited', async () => {
+  const { HAZARDS, SETTINGS } = await import('../dist/crossroad-parts.js');
+  assert.equal(HAZARDS.ice.ok({ world: 'heat' }), false);
+  assert.equal(HAZARDS.ice.ok({ world: 'cold' }), true);
+  assert.deepEqual(HAZARDS.trap.lures, ['food', 'prey', 'scent']);
+  for (const [id, st] of Object.entries(SETTINGS)) {
+    for (const h of st.hazards) assert.ok(HAZARDS[h], `${id} → ${h}`);
+    assert.ok(st.text.length >= 1);
+  }
+  assert.ok(Object.keys(SETTINGS).length >= 24);
 });

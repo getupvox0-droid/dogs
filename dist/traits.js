@@ -9,6 +9,7 @@ const LABELS = {
   'hand-shy': '낯선 손을 경계함',
   'stomach-wary': '낯선 먹이를 경계함',
   wanderer: '멀리 헤매 본 적이 있음',
+  forager: '먹이 찾는 요령이 있음',
   'road-wise': '길 건너는 요령이 있음',
   'traffic-fear': '굉음을 무서워함',
   'sound-fear': '큰 소리를 무서워함',
@@ -21,6 +22,10 @@ const LABELS = {
   'sharp-fear': '반짝이는 바닥을 피함',
   'lost-fear': '낯선 길을 꺼림',
   'heat-fear': '더위에 약함',
+  'train-fear': '쇠줄의 떨림에 몸을 피함',
+  'trap-fear': '쇠 냄새를 피함',
+  'wild-fear': '짐승 냄새에 등털이 섬',
+  'ice-fear': '얼음 위를 걷지 않음',
   'traffic-wise': '길 건너는 요령이 있음',
   'water-wise': '물가에서 조심할 줄 앎',
   'height-wise': '높은 곳에서 발을 고를 줄 앎',
@@ -31,6 +36,10 @@ const LABELS = {
   'sharp-wise': '발밑을 살필 줄 앎',
   'lost-wise': '아는 냄새를 되짚을 줄 앎',
   'heat-wise': '그늘을 찾을 줄 앎',
+  'train-wise': '철길에서 물러설 때를 앎',
+  'trap-wise': '풀숲에서 발밑을 살필 줄 앎',
+  'wild-wise': '짐승을 피해 돌아갈 줄 앎',
+  'ice-wise': '얼음 위에서 몸을 낮출 줄 앎',
 };
 const TURNS = ['adopt', 'rescued-shelter', 'caught-shelter', 'gate-out', 'shelter-escape'];
 

@@ -5,11 +5,38 @@
 
 // Which settings a life can meet, by where it lives now (worldModel.context.id).
 export const SETTING_FAMILIES = {
-  'street-city': ['alley', 'market', 'parking', 'roadside', 'site'],
-  'street-rural': ['field', 'farmroad', 'barn', 'stream', 'roadside'],
-  'street-water': ['pier', 'embankment', 'alley', 'roadside'],
-  'family-city': ['kitchen', 'balcony', 'frontdoor', 'park', 'stairs', 'roadside'],
-  'family-house': ['kitchen', 'frontdoor', 'park', 'farmroad', 'stairs', 'yard'],
+  'street-city': [
+    'alley',
+    'market',
+    'parking',
+    'roadside',
+    'site',
+    'railway',
+    'dump',
+    'schoolyard',
+  ],
+  'street-rural': [
+    'field',
+    'farmroad',
+    'barn',
+    'stream',
+    'roadside',
+    'railway',
+    'orchard',
+    'hillside',
+  ],
+  'street-water': ['pier', 'embankment', 'alley', 'roadside', 'dump'],
+  'family-city': ['kitchen', 'balcony', 'frontdoor', 'park', 'stairs', 'roadside', 'schoolyard'],
+  'family-house': [
+    'kitchen',
+    'frontdoor',
+    'park',
+    'farmroad',
+    'stairs',
+    'yard',
+    'orchard',
+    'hillside',
+  ],
   'family-coast': ['kitchen', 'frontdoor', 'embankment', 'pier', 'yard'],
   shelter: ['kennel', 'shelteryard', 'frontdoor'],
 };
@@ -41,7 +68,7 @@ export function settingFamily(s) {
 export const SETTINGS = {
   alley: {
     text: ['좁은 골목 바닥에 기름 자국이 번들거린다.', '건물 사이 골목에 바람이 갇혀 맴돈다.'],
-    lures: ['food', 'prey', 'dogcall', 'person', 'warmth', 'scent'],
+    lures: ['food', 'prey', 'dogcall', 'person', 'warmth', 'scent', 'kids'],
     hazards: ['traffic', 'hostile-dog', 'hostile-human', 'sharp', 'poison'],
   },
   market: {
@@ -82,7 +109,7 @@ export const SETTINGS = {
   stream: {
     text: ['물소리가 가깝다. 발밑의 돌이 미끄럽다.'],
     lures: ['prey', 'water', 'scent'],
-    hazards: ['water', 'sharp'],
+    hazards: ['water', 'sharp', 'ice'],
   },
   pier: {
     text: ['비린내가 진하고, 바닥 널판 사이로 출렁이는 물이 보인다.'],
@@ -92,7 +119,7 @@ export const SETTINGS = {
   embankment: {
     text: ['높은 둑 위로 바람이 세게 분다. 아래에서 물소리가 난다.'],
     lures: ['prey', 'dogcall', 'scent', 'water'],
-    hazards: ['water', 'height'],
+    hazards: ['water', 'height', 'ice'],
   },
   kitchen: {
     text: ['높은 곳에서 음식 냄새가 내려온다. 바닥이 매끄럽다.'],
@@ -111,8 +138,8 @@ export const SETTINGS = {
   },
   park: {
     text: ['풀밭이 넓고 다른 개들의 흔적이 많다. 목줄이 느슨하게 늘어져 있다.'],
-    lures: ['toy', 'dogcall', 'prey', 'food', 'person'],
-    hazards: ['hostile-dog', 'poison', 'lost'],
+    lures: ['toy', 'dogcall', 'prey', 'food', 'person', 'kids'],
+    hazards: ['hostile-dog', 'poison', 'lost', 'ice'],
   },
   stairs: {
     text: ['계단이 아래로 길게 이어진다. 끝이 잘 보이지 않는다.'],
@@ -137,9 +164,49 @@ export const SETTINGS = {
 };
 
 // rush / careful / avoid texts. `items` fill {item} so one lure reads differently each time.
+// More settings: rail, waste, school, orchard, hill.
+Object.assign(SETTINGS, {
+  railway: {
+    text: [
+      '자갈이 깔린 둑 위로 쇠줄 두 개가 길게 뻗어 있다.',
+      '쇠 냄새와 기름 냄새가 섞인 자갈길이다.',
+    ],
+    lures: ['food', 'prey', 'dogcall', 'scent'],
+    hazards: ['train', 'sharp'],
+  },
+  dump: {
+    text: ['봉지와 상자가 산처럼 쌓여 있다. 온갖 냄새가 한꺼번에 난다.'],
+    lures: ['food', 'prey', 'warmth'],
+    hazards: ['poison', 'sharp', 'hostile-dog'],
+  },
+  schoolyard: {
+    text: ['넓은 흙 마당에 아이들 목소리가 울린다.', '철봉과 미끄럼틀 사이로 바람이 지나간다.'],
+    lures: ['kids', 'toy', 'food', 'dogcall'],
+    hazards: ['hostile-human', 'lost', 'height'],
+  },
+  orchard: {
+    text: ['나무 사이로 떨어진 열매 냄새가 달다.', '줄지어 선 나무 아래 풀이 무릎까지 자랐다.'],
+    lures: ['food', 'prey', 'scent'],
+    hazards: ['trap', 'poison', 'wild'],
+  },
+  hillside: {
+    text: ['흙과 낙엽 냄새가 짙다. 길이 숲 안쪽으로 이어진다.'],
+    lures: ['prey', 'scent', 'dogcall', 'water'],
+    hazards: ['wild', 'lost', 'trap', 'height'],
+  },
+});
+
 export const LURES = {
   food: {
-    items: ['고기 조각', '생선 머리', '튀김 부스러기', '닭 뼈', '빵 조각'],
+    items: [
+      '고기 조각',
+      '생선 머리',
+      '튀김 부스러기',
+      '닭 뼈',
+      '빵 조각',
+      '소시지 조각',
+      '떨어진 과일',
+    ],
     sense: (x) => `${x} 냄새가 진하게 풍겨 온다.`,
     rush: '냄새를 따라 곧장 달려간다',
     careful: '몸을 낮추고 냄새 쪽으로 천천히 다가간다',
@@ -151,7 +218,7 @@ export const LURES = {
   },
   prey: {
     min: 150,
-    items: ['고양이 한 마리', '작은 새', '쥐 한 마리', '비둘기'],
+    items: ['고양이 한 마리', '작은 새', '쥐 한 마리', '비둘기', '다람쥐', '개구리'],
     sense: (x, j) => `${j(x, '이', '가')} 재빠르게 움직인다. 다리에 저절로 힘이 들어간다.`,
     rush: '몸을 날려 쫓아간다',
     careful: '몸을 낮추고 살금살금 따라간다',
@@ -240,6 +307,18 @@ export const LURES = {
 
 // severity 3 can kill on a rush; 2 only a puppy, an old dog or a frail one; 1 never kills.
 // `cue` is what the dog senses without knowing what it means; `know` is the player's line.
+LURES.kids = {
+  min: 90,
+  sense: () => '아이들이 소리를 지르며 손짓한다. 손에서 과자 냄새가 난다.',
+  rush: '꼬리를 흔들며 아이들 사이로 뛰어든다',
+  careful: '몸을 낮추고 아이들 쪽으로 천천히 다가간다',
+  avoid: '멀찍이 앉아 아이들을 지켜본다',
+  reward: () => '아이들이 과자를 나눠 주고 머리를 쓰다듬었다. 한참을 같이 뛰었다.',
+  lack: '아이들 소리가 멀어졌다.',
+  delta: { trust: 4, hunger: -6, happiness: 6 },
+  miss: {},
+};
+
 export const HAZARDS = {
   traffic: {
     severity: 3,
@@ -312,7 +391,10 @@ export const HAZARDS = {
   'hostile-human': {
     severity: 1,
     cue: ['쇠붙이가 부딪히는 소리와 함께 낯선 사람의 발소리가 다가온다.'],
-    know: () => '길의 개를 쫓아내거나 붙잡으려는 사람이 자주 오는 곳입니다.',
+    know: (setting) =>
+      setting === 'schoolyard'
+        ? '아이들 가운데에는 개를 놀리거나 돌을 던지는 아이도 있습니다.'
+        : '길의 개를 쫓아내거나 붙잡으려는 사람이 자주 오는 곳입니다.',
     fear: '사람의 발소리에 몸이 먼저 움츠러든다.',
     near: '사람이 막대기를 휘둘렀다. 몸을 비틀어 피했다.',
     hit: '날아온 막대기에 등을 맞았다. 깨갱대며 달아났다.',
@@ -360,3 +442,50 @@ export const HAZARDS = {
     death: { cause: '더위에 쓰러짐', text: '뜨거운 숨이 끝내 가라앉지 않았다.' },
   },
 };
+
+Object.assign(HAZARDS, {
+  train: {
+    severity: 3,
+    cue: ['발밑의 쇠줄이 가늘게 떨리기 시작한다.', '멀리서 낮은 울림이 쇠줄을 타고 온다.'],
+    know: () => '철길입니다. 기차는 멀리서도 빠르게 다가오고, 개를 보고도 멈추지 못합니다.',
+    fear: '쇠줄이 떨리자 몸이 먼저 뒤로 물러난다.',
+    near: '쇠줄이 울리는 순간 몸을 날렸다. 등 뒤로 거센 바람이 지나갔다.',
+    hit: '쇠줄이 울리고 거센 바람이 몸을 밀쳤다. 자갈 위로 나뒹굴었다.',
+    hurt: '자갈에 쓸린 다리와 옆구리가 아프다. 딛을 때마다 몸이 기운다.',
+    death: { cause: '철길에서 기차에 치임', text: '쇠가 울리는 소리가 온몸을 덮었다.' },
+  },
+  trap: {
+    severity: 2,
+    // A trap is baited: only something worth reaching for leads a dog into one.
+    lures: ['food', 'prey', 'scent'],
+    cue: ['풀 사이에서 쇠 냄새와 오래된 피 냄새가 희미하게 난다.'],
+    know: () => '짐승을 잡으려고 숨겨 놓은 덫이 있습니다. 개의 다리도 잡힙니다.',
+    fear: '쇠 냄새를 맡자 발을 든 채 멈춘다.',
+    near: '앞발 바로 앞에서 철컥 소리가 났다. 놀라 뒤로 튀어 올랐다.',
+    hit: '철컥 소리와 함께 다리가 쇠에 물렸다. 한참을 버둥거린 뒤에야 빠져나왔다.',
+    hurt: '덫에 물렸던 다리가 붓고 피가 멈추지 않는다.',
+    death: { cause: '덫에 걸린 상처', text: '쇠에 물린 다리를 끝내 빼내지 못했다.' },
+  },
+  wild: {
+    severity: 2,
+    cue: ['풀숲 안쪽에서 낯선 짐승 냄새가 짙게 난다. 무언가 낮게 움직인다.'],
+    know: () => '멧돼지나 뱀 같은 야생동물이 사는 곳입니다. 놀란 짐승은 개를 공격합니다.',
+    fear: '짐승 냄새에 등털이 선다.',
+    near: '풀숲이 크게 흔들렸다. 짖으며 물러서자 소리가 멀어졌다.',
+    hit: '풀숲에서 튀어나온 짐승이 몸을 들이받았다.',
+    hurt: '들이받힌 옆구리와 다리가 붓고 열이 난다.',
+    death: { cause: '야생동물에게 공격당함', text: '풀숲 안쪽의 짐승 냄새가 몸을 덮었다.' },
+  },
+  ice: {
+    severity: 3,
+    illness: 'respiratory',
+    ok: (s) => s.world === 'cold',
+    cue: ['발밑이 단단하고 차갑게 빛난다. 디딜 때마다 미끄럽다.'],
+    know: () => '얼어붙은 물 위입니다. 얼음은 가장자리부터 얇아서 개의 무게에도 깨질 수 있습니다.',
+    fear: '차갑게 빛나는 바닥 앞에서 발을 멈춘다.',
+    near: '발밑에서 쩍 소리가 났다. 엎드린 채 기어서 물러났다.',
+    hit: '얼음이 깨지며 차가운 물에 빠졌다. 발톱으로 가장자리를 긁어 겨우 올라왔다.',
+    hurt: '얼음물에 빠졌다 나온 뒤 몸이 떨리고 기침이 멈추지 않는다.',
+    death: { cause: '얼음이 깨져 물에 빠짐', text: '차가운 물이 숨을 막았다.' },
+  },
+});
