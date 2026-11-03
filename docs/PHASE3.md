@@ -81,6 +81,8 @@
 
 다 산 강아지를 공원에 남기고, 다른 사람이 촛불을 켜고 한마디를 남깁니다.
 
+> 구현 완료: `worker/park-api.js`(API), `dist/park.js`(남길 수 있는 것의 규칙, 페이지와 서버가 함께 씀), `dist/park-client.js`, `dist/park-admin.html`(숨겨진 기록 확인). 첫 화면의 "무지개다리 공원", 엔딩의 "공원에 남기기". 실제 반려견도 받습니다 (아래 "실제 반려견"). 배포 전 준비는 README의 "무지개다리 공원 준비"에 있습니다.
+
 **남기는 것**
 - 도감 기록 그대로: 이름, 품종, 나라, 출생 환경, 산 기간, 삶의 갈래, 가장 오래 곁에 있던 존재, 마지막 한 문장
 - 3-2 공유 코드: 누르면 그 삶을 다시 볼 수 있습니다.
@@ -102,20 +104,30 @@
 
 가격과 무료 한도는 착수할 때 다시 확인합니다.
 
+**실제 반려견**
+- 이름(필수), 품종이나 생김새, 태어난 해, 떠난 해, 한마디(최대 200자)만 받습니다.
+- 사진은 아직 받지 않습니다. 사진을 받으면 저장소(R2)와 사진 검토 기준이 따로 필요합니다.
+- 게임 속 강아지와 같은 공원에 섞여 보이고, 카드 색과 "함께 살았던 반려견" 표시로 구분합니다.
+- 양식에 "사람의 실명이나 개인 정보는 적지 말아 주세요"라고 적고, 연락처 형식(전화번호, 이메일)은 막습니다.
+
 **데이터 (D1)**
 ```
-memorials  id, created_at, code, name, breed, country, birth_home, age_days,
-           paths, companion, last_line, message, candles, status, device_hash
+memorials  id, created_at, kind(game|real), data(JSON), message, candles, reports,
+           status(shown|hidden), device_hash
 candles    memorial_id, device_hash, created_at   -- (memorial_id, device_hash) 유일
-reports    target_id, reason, device_hash, created_at
+reports    memorial_id, device_hash, reason, created_at   -- 같은 기기의 신고는 한 번만
 ```
+표는 Worker가 첫 요청 때 `CREATE TABLE IF NOT EXISTS`로 만듭니다. 따로 마이그레이션할 필요가 없습니다.
 
 **API**
 ```
 GET  /api/memorials?order=recent|random&cursor=…
 POST /api/memorials          { code, entry, message, turnstile }
 POST /api/memorials/:id/candle { turnstile }
-POST /api/memorials/:id/report { reason }
+POST /api/memorials/:id/report { reason, turnstile }
+DELETE /api/memorials/:id     -- 남긴 기기에서만
+GET  /api/admin/memorials     -- Authorization: Bearer ADMIN_TOKEN
+POST /api/admin/memorials/:id { action: restore|delete }
 ```
 
 **스팸과 악용 막기**
@@ -123,7 +135,7 @@ POST /api/memorials/:id/report { reason }
 - 기기 하나에 하루 몇 마리까지만 남길 수 있게 합니다.
 - 한마디에는 링크를 넣을 수 없고, 간단한 금칙어 목록을 거칩니다.
 - 신고가 3번 쌓이면 자동으로 숨기고, 관리자가 다시 판단합니다.
-- 관리자 화면은 따로 만들지 않고, 처음에는 숨겨진 글을 확인하는 작은 페이지 하나로 시작합니다.
+- 관리자 화면은 따로 만들지 않고, 숨겨진 글을 확인하는 작은 페이지 하나(`/park-admin.html`)로 시작합니다. 운영자가 가끔 들어가 되돌리거나 지웁니다.
 - **가짜 기록.** 한 생을 다시 계산하는 데 약 60ms가 걸려서 무료 플랜 서버에서 바로 검증하기는 어렵습니다. 처음에는 검증하지 않습니다. 게임 기록은 꾸며도 얻는 것이 없고, 문제가 되는 것은 자유 입력 한마디뿐이기 때문입니다. 필요해지면 유료 플랜이나 주기적인 일괄 검증으로 확인합니다.
 
 **개인 정보**
@@ -151,7 +163,7 @@ POST /api/memorials/:id/report { reason }
 
 ## 정해야 할 것
 
-1. ~~배포 위치~~ → **Cloudflare Pages로 결정**
+1. ~~배포 위치~~ → **Cloudflare로 결정** (Workers 정적 자산)
 2. ~~오늘의 강아지의 출생 기준~~ → **현실 비율로 결정**
-3. **실제 반려견 추모**: 공원을 게임 속 강아지 전용으로 둘지, 실제로 떠난 반려견도 남길 수 있게 할지. 실제 반려견을 받으면 사진, 사적인 글, 신고 대응 기준이 크게 달라지므로 처음에는 게임 속 강아지만 받는 것을 추천합니다.
-4. **운영**: 신고된 글을 누가 얼마나 자주 확인할지. 3-3을 열기 전에 정해야 합니다.
+3. ~~실제 반려견 추모~~ → **실제 반려견도 받기로 결정.** 처음에는 사진 없이 글만 받습니다.
+4. ~~운영~~ → **운영자가 가끔 숨겨진 기록 페이지에서 확인.** 확인하기 전까지는 숨겨진 채로 둡니다.

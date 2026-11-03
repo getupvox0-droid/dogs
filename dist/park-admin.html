@@ -1,0 +1,98 @@
+<!doctype html>
+<html lang="ko">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="robots" content="noindex" />
+    <title>공원 숨긴 글</title>
+    <link rel="stylesheet" href="dashboard.css" />
+    <style>
+      main {
+        max-width: 860px;
+        margin: 0 auto;
+        padding: 24px 16px;
+      }
+    </style>
+  </head>
+  <body>
+    <main>
+      <h1>무지개다리 공원 · 숨겨진 기록</h1>
+      <p class="muted">
+        신고가 쌓여 숨겨진 기록입니다. 문제가 없으면 되돌리고, 있으면 지웁니다. 관리 토큰은 이
+        탭에만 기억됩니다.
+      </p>
+      <form id="login" class="park-form">
+        <label>관리 토큰 <input id="token" type="password" autocomplete="off" /></label>
+        <div class="actions"><button class="primary">불러오기</button></div>
+      </form>
+      <p id="status" class="muted" role="status"></p>
+      <ol id="list" class="park-list"></ol>
+    </main>
+    <script type="module">
+      const $ = (id) => document.getElementById(id);
+      let token = sessionStorage.getItem('park-admin') || '';
+      $('token').value = token;
+      async function api(path, body) {
+        const r = await fetch(path, {
+          method: body ? 'POST' : 'GET',
+          headers: { authorization: `Bearer ${token}`, 'content-type': 'application/json' },
+          body: body && JSON.stringify(body),
+        });
+        if (!r.ok) throw Error(r.status === 404 ? '토큰이 맞지 않습니다.' : '요청에 실패했습니다.');
+        return r.json();
+      }
+      function line(tag, text) {
+        const n = document.createElement(tag);
+        n.textContent = text;
+        return n;
+      }
+      async function load() {
+        $('list').replaceChildren();
+        try {
+          const { memorials } = await api('/api/admin/memorials');
+          $('status').textContent = memorials.length
+            ? `숨겨진 기록 ${memorials.length}개`
+            : '숨겨진 기록이 없습니다.';
+          for (const m of memorials) {
+            const li = document.createElement('li');
+            li.className = 'park-card' + (m.kind === 'real' ? ' real' : '');
+            li.append(
+              line(
+                'small',
+                `${m.kind === 'real' ? '실제 반려견' : '게임'} · 신고 ${m.reports}번 · ${new Date(m.createdAt).toLocaleString('ko-KR')}`,
+              ),
+              line('h3', m.name || m.breed || ''),
+            );
+            if (m.breed) li.append(line('p', m.breed));
+            if (m.message) li.append(line('blockquote', m.message));
+            const foot = document.createElement('div');
+            foot.className = 'park-foot';
+            for (const [action, label] of [
+              ['restore', '되돌리기'],
+              ['delete', '지우기'],
+            ]) {
+              const b = line('button', label);
+              b.onclick = async () => {
+                if (action === 'delete' && !confirm('이 기록을 완전히 지울까요?')) return;
+                await api(`/api/admin/memorials/${m.id}`, { action });
+                li.remove();
+              };
+              foot.append(b);
+            }
+            li.append(foot);
+            $('list').append(li);
+          }
+        } catch (e) {
+          $('status').textContent = e.message;
+        }
+      }
+      $('login').onsubmit = (e) => {
+        e.preventDefault();
+        token = $('token').value.trim();
+        sessionStorage.setItem('park-admin', token);
+        load();
+      };
+      if (token) load();
+    </script>
+  </body>
+</html>

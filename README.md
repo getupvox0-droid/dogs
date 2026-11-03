@@ -30,20 +30,35 @@ npm start       # http://localhost:8000 에서 실행 (Python 3 필요)
 
 공개 주소: https://dogs.getupvox0.workers.dev/
 
-Cloudflare Worker `dogs`가 GitHub 저장소와 연결되어 있어서, `main`에 머지할 때마다 자동으로 다시 배포됩니다. 서버 코드는 없고 `dist/`를 정적 파일로만 내보냅니다.
+Cloudflare Worker `dogs`가 GitHub 저장소와 연결되어 있어서, `main`에 머지할 때마다 자동으로 다시 배포됩니다. 게임은 `dist/`의 정적 파일이고, `/api/*`만 `worker/`의 무지개다리 공원 API가 받습니다.
 
 - 빌드: `npm run build` (Node 버전은 `.node-version`의 22)
 - 배포: `npx wrangler deploy`, 설정은 `wrangler.jsonc` (`assets.directory = ./dist`)
 - 응답 헤더(캐시, 보안): `dist/_headers`
+- 공원 API: `worker/park-api.js`, 저장소는 D1 `dogs-park` (표는 첫 요청 때 자동으로 만듦)
 - 다른 브랜치는 `*-dogs.getupvox0.workers.dev` 미리보기 주소로 배포됩니다.
 
 새로 연결할 때는 Cloudflare 대시보드 → Workers & Pages → Create → Import a repository에서 이 저장소를 고르고, 빌드 명령에 `npm run build`를 넣습니다.
+
+### 무지개다리 공원 준비 (한 번만)
+
+1. **D1 데이터베이스**: Storage & Databases → D1 → Create, 이름 `dogs-park`. 만든 뒤 보이는 Database ID를 `wrangler.jsonc`의 `database_id`에 넣습니다.
+2. **Turnstile**: Turnstile → Add widget, 도메인 `dogs.getupvox0.workers.dev`. Site Key는 `wrangler.jsonc`의 `TURNSTILE_SITE_KEY`에 넣습니다.
+3. **비밀 값**: Workers → `dogs` → Settings → Variables and Secrets에 Secret으로 추가합니다.
+   - `TURNSTILE_SECRET`: Turnstile의 Secret Key
+   - `DEVICE_SALT`: 아무 긴 무작위 문자열 (기기 구분 값을 해시할 때 씀, 바꾸면 기존 촛불·내 기록 표시가 끊김)
+   - `ADMIN_TOKEN`: 아무 긴 무작위 문자열 (숨겨진 기록 페이지 `/park-admin.html`의 비밀번호)
+
+세 비밀 값 중 하나라도 없으면 공원은 보기만 되고 남기기는 막힙니다.
+
+로컬에서 API까지 돌려 보려면 `.dev.vars.example`을 `.dev.vars`로 복사한 뒤 `npx wrangler dev`를 실행합니다. Cloudflare의 테스트용 Turnstile 키라 사람 확인이 항상 통과합니다.
 
 ## 폴더 구조
 
 | 경로 | 내용 |
 | --- | --- |
 | `dist/` | 게임 본체 (HTML, CSS, JS 모듈, 데이터, 이미지) |
+| `worker/` | Cloudflare Worker (무지개다리 공원 API) |
 | `tests/` | Node 내장 테스트 러너용 테스트 |
 | `scripts/` | 이미지 복원, 콘텐츠 점검, 사진 수집 스크립트 |
 | `asset-source/` | 큰 이미지를 Base64 조각으로 보관 (빌드 시 `dist/assets/`로 복원) |

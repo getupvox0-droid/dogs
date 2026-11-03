@@ -36,3 +36,7 @@
 node_modules/
 .DS_Store
 Thumbs.db
+
+# Cloudflare 로컬 개발
+.dev.vars
+.wrangler/
