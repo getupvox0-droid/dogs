@@ -45,10 +45,15 @@
             </p>
             <div class="actions">
               <button class="primary" id="birth">새로운 삶으로 태어나기 ↗</button
+              ><button id="birth-daily">오늘의 강아지로 태어나기</button
               ><button id="resume" hidden>이어서 살기</button
               ><button id="collection-open">도감</button>
             </div>
             <small>12개 국가 · 랜덤 외형 · 제작한 성장 컷과 기억</small>
+            <small id="daily-note"
+              >오늘의 강아지: 같은 날 태어나는 모두가 같은 강아지로 시작합니다. 매일 한국 시간
+              자정에 바뀝니다.</small
+            >
             <div class="birth-options">
               <fieldset>
                 <legend>태어날 곳을 뽑는 기준</legend>
@@ -132,7 +137,7 @@
       </section>
       <section id="birth-screen" class="cinematic" hidden aria-labelledby="birth-title">
         <div class="cinematic-top">
-          <span class="eyebrow">작은 발자국 · 첫 장면</span
+          <span class="eyebrow" id="birth-eyebrow">작은 발자국 · 첫 장면</span
           ><button id="birth-home">처음으로</button>
         </div>
         <h1 id="birth-title">새로운 생명이 태어났습니다.</h1>
