@@ -24,7 +24,24 @@ npm start       # http://localhost:8000 에서 실행 (Python 3 필요)
 
 `dist/` 폴더가 그대로 정적 사이트입니다. 배포할 때는 `npm run build` 후 `dist/`를 올리면 됩니다.
 
-## 폴더 구조
+## 배포 (Cloudflare Pages)
+
+Cloudflare 대시보드에서 한 번만 연결하면, 이후 `main`에 머지할 때마다 자동으로 배포됩니다.
+
+1. Cloudflare 대시보드 → **Workers & Pages** → **Create** → **Pages** → **Connect to Git**
+2. GitHub 저장소 `getupvox0-droid/dogs` 선택
+3. 빌드 설정
+   - Production branch: `main`
+   - Build command: `npm run build`
+   - Build output directory: `dist`
+   - Node 버전은 저장소의 `.node-version`(22)을 따릅니다.
+4. **Save and Deploy**
+
+PR마다 미리보기 주소가 따로 만들어집니다. 응답 헤더(캐시, 보안)는 `dist/_headers`에 있습니다.
+
+배포 주소가 정해지면 `dist/index.html`에 공유 미리보기 이미지(`og:image`, 절대 주소)를 추가합니다.
+
+
 
 | 경로 | 내용 |
 | --- | --- |
