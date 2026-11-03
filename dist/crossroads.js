@@ -864,7 +864,10 @@ export function crossroadChoice(s, p, id, { log, remember }) {
   }
   log(s, 'crossroad-result', out.text);
   s.log.at(-1).storyId = 'crossroad:' + c.id;
-  if (out.mark && !state.marks.includes(out.mark)) state.marks.push(out.mark);
+  if (out.mark && !state.marks.includes(out.mark)) {
+    state.marks.push(out.mark);
+    (state.markDays ??= {})[out.mark] = s.day;
+  }
   state.history.push({ id: c.id, day: s.day, option: id, outcome: option.outcomes.indexOf(out) });
   remember(s, `crossroad:${c.id}:${id}`);
   if (out.hurt) beginIllness(s, { log, random: () => 0 }, out.illness || 'injury', out.hurt);
@@ -904,6 +907,8 @@ export function validateCrossroads(s) {
       !c.marks.every((m) => typeof m === 'string') ||
       !Array.isArray(c.history) ||
       (c.used != null && (!Array.isArray(c.used) || !c.used.every((u) => typeof u === 'string'))) ||
+      (c.markDays != null &&
+        (typeof c.markDays !== 'object' || !Object.values(c.markDays).every(Number.isInteger))) ||
       (s.pending?.id === 'crossroad:gen' && !validGenerated(s.pending.gen)))
   )
     throw Error('손상된 갈림길 기록');
