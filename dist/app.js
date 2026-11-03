@@ -28,7 +28,15 @@ import {
   addLife,
   summarize,
 } from './collection.js';
-import { TIME_CONFIG, clockState, clockDays, readingMs, readingGate } from './time-config.js';
+import {
+  TIME_CONFIG,
+  READING_SPEEDS,
+  setReadingSpeed,
+  clockState,
+  clockDays,
+  readingMs,
+  readingGate,
+} from './time-config.js';
 import { visualFor, diagramSvg, PHASE_NAMES } from './visuals.js';
 import { downloadLifeCard } from './share-card.js';
 import { josa } from './korean.js';
@@ -116,13 +124,19 @@ function loadProfile() {
     return {
       birthMode: p.birthMode in BIRTH_MODES ? p.birthMode : 'explore',
       lifeLength: p.lifeLength in LIFE_LENGTHS ? p.lifeLength : 'normal',
+      readingSpeed: p.readingSpeed in READING_SPEEDS ? p.readingSpeed : 'normal',
       myDog: {
         name: cleanName(p.myDog?.name),
         age: Number.isInteger(age) && age >= 0 && age <= 30 ? age : null,
       },
     };
   } catch {
-    return { birthMode: 'explore', lifeLength: 'normal', myDog: { name: '', age: null } };
+    return {
+      birthMode: 'explore',
+      lifeLength: 'normal',
+      readingSpeed: 'normal',
+      myDog: { name: '', age: null },
+    };
   }
 }
 function saveProfile() {
@@ -130,6 +144,7 @@ function saveProfile() {
   const profile = {
     birthMode: $('birth-mode-real').checked ? 'real' : 'explore',
     lifeLength: Object.keys(LIFE_LENGTHS).find((k) => $('life-length-' + k).checked) || 'normal',
+    readingSpeed: $('read-speed').value in READING_SPEEDS ? $('read-speed').value : 'normal',
     myDog: {
       name: cleanName($('my-dog-name').value),
       age: Number.isFinite(age) && age >= 0 && age <= 30 ? age : null,
@@ -432,20 +447,22 @@ function showModal(type, keyValue) {
     for (const [k, v] of Object.entries(p.delta || {}))
       $('result-deltas').append(el('span', `${names[k] || k} ${v > 0 ? '+' : ''}${v}`));
     $('continue-story').disabled = true;
-    $('read-hint').textContent = '잠시 멈춰 이 장면을 읽습니다.';
+    // Watching (observe) moves on by itself after a reading window. Otherwise the scene stays until
+    // the reader presses on; the short guard only keeps a stray click from skipping it unread.
+    const watching = simulationMode(life) === 'observe';
+    $('read-hint').textContent = watching
+      ? '잠시 멈춰 이 장면을 읽습니다.'
+      : '다 읽으면 계속 진행을 누르세요. (Space)';
     if (resultTimer) clearTimeout(resultTimer);
     resultTimer = setTimeout(
       () => {
         resultTimer = null;
         readingReady = true;
         $('continue-story').disabled = false;
-        $('read-hint').textContent =
-          life.chronicle.preferences.pace === 'story'
-            ? '읽었다면 계속 진행을 눌러 주세요.'
-            : '삶이 다시 이어집니다.';
-        if (simulationMode(life) !== 'direct') finishResult();
+        if (watching) finishResult();
+        else $('continue-story').focus?.();
       },
-      p.minimumMs || readingMs(p.text),
+      watching ? readingMs(p.text) : 1200,
     );
     $('pause').disabled = true;
     $('next').disabled = true;
@@ -1242,6 +1259,16 @@ $('file').onchange = async (e) => {
 // Escape folds a decision; Tab remains inside the visible modal.
 document.addEventListener?.('keydown', (e) => {
   if ($('modal').hidden) return;
+  if (
+    e.key === ' ' &&
+    !$('result').hidden &&
+    readingReady &&
+    document.activeElement?.tagName !== 'BUTTON'
+  ) {
+    e.preventDefault();
+    finishResult();
+    return;
+  }
   if (e.key === 'Escape') {
     $('dismiss').onclick();
     return;
@@ -1282,6 +1309,13 @@ try {
     r.onchange = saveProfile;
   }
   $('life-length-note').textContent = LIFE_LENGTHS[p.lifeLength].note;
+  $('read-speed').value = p.readingSpeed;
+  setReadingSpeed(p.readingSpeed);
+  $('read-speed').onchange = () => {
+    setReadingSpeed($('read-speed').value);
+    saveProfile();
+    nextBeatAt = Math.max(nextBeatAt, performance.now() + 600);
+  };
 }
 setInterval(() => {
   const now = performance.now();

@@ -23,11 +23,11 @@ const ORDINARY = [
 export const LIFE_LENGTHS = {
   short: {
     label: '짧게',
-    note: '1배속 기준 약 10~15분 · 평범한 하루는 읽지 않고 지나갑니다.',
-    wait: 0.6,
+    note: '약 25분 · 평범한 하루는 읽지 않고 지나갑니다.',
+    wait: 0.75,
   },
-  normal: { label: '보통', note: '1배속 기준 약 25분', wait: 1 },
-  long: { label: '길게', note: '1배속 기준 약 45분 · 장면마다 더 오래 머뭅니다.', wait: 1.8 },
+  normal: { label: '보통', note: '약 40분', wait: 1 },
+  long: { label: '길게', note: '약 1시간 · 장면마다 더 오래 머뭅니다.', wait: 1.8 },
 };
 export function lifeLength(s) {
   const v = s.chronicle?.preferences?.lifeLength;
@@ -111,7 +111,7 @@ export function nextStoryBeat(
       LIFE_LENGTHS[length].wait *
       Math.max(
         observe ? 800 : 1600,
-        Math.min(observe ? 4500 : 9000, readingMs(text) * (observe ? 0.55 : 0.8)),
+        Math.min(observe ? 7000 : 16000, readingMs(text) * (observe ? 0.55 : 0.8)),
       ),
   };
 }

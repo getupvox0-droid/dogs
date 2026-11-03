@@ -4,14 +4,24 @@ export const TIME_CONFIG = {
   speeds: [1, 2, 4, 8],
   pollMs: 100,
   maxCatchupDays: 1,
-  readBaseMs: 2500,
-  readCharMs: 55,
-  readMaxMs: 18000,
+  readBaseMs: 3000,
+  readMaxMs: 30000,
 };
+// How long a reader gets per character. Normal is about 9 Korean characters a second, a calm pace
+// for this kind of prose; the setting belongs to the reader, not the life, so it never changes a seed.
+export const READING_SPEEDS = {
+  slow: { label: '천천히', charMs: 160 },
+  normal: { label: '보통', charMs: 110 },
+  fast: { label: '빠르게', charMs: 70 },
+};
+let readCharMs = READING_SPEEDS.normal.charMs;
+export function setReadingSpeed(name) {
+  readCharMs = (READING_SPEEDS[name] ?? READING_SPEEDS.normal).charMs;
+}
 export function readingMs(text = '') {
   return Math.min(
     TIME_CONFIG.readMaxMs,
-    Math.max(TIME_CONFIG.readBaseMs, text.length * TIME_CONFIG.readCharMs),
+    Math.max(TIME_CONFIG.readBaseMs, text.length * readCharMs),
   );
 }
 export function clockState() {
