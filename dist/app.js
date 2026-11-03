@@ -13,6 +13,14 @@ import {
   biography,
 } from './chronicle.js';
 import { BIRTH_MODES, countryFacts, countryShares, homeShares } from './birth-odds.js';
+import {
+  COLLECTION_KEY,
+  HOMES,
+  parseCollection,
+  lifeEntry,
+  addLife,
+  summarize,
+} from './collection.js';
 import { TIME_CONFIG, clockState, clockDays, readingMs, readingGate } from './time-config.js';
 import { visualFor, diagramSvg, PHASE_NAMES } from './visuals.js';
 import { downloadLifeCard } from './share-card.js';
@@ -106,6 +114,25 @@ function saveProfile() {
   } catch {}
   $('birth-mode-note').textContent = BIRTH_MODES[profile.birthMode].note;
   return profile;
+}
+function loadCollection() {
+  try {
+    return parseCollection(localStorage.getItem(COLLECTION_KEY));
+  } catch {
+    return parseCollection(null);
+  }
+}
+// Adds a finished life to the collection book once per session; replacing by id keeps it idempotent.
+const recorded = new Set();
+function recordLife() {
+  if (!life || life.alive || recorded.has(life.lifeId)) return;
+  try {
+    localStorage.setItem(
+      COLLECTION_KEY,
+      JSON.stringify(addLife(loadCollection(), lifeEntry(life))),
+    );
+    recorded.add(life.lifeId);
+  } catch {}
 }
 const pct = (x) => (x >= 0.1 ? `${Math.round(x * 100)}%` : `${(x * 100).toFixed(1)}%`);
 const displayName = (s) => (s.name ? `${s.name} · ${s.breed}` : s.breed);
@@ -641,9 +668,89 @@ function goHome() {
   resultTimer = null;
   save();
   closeModal();
-  for (const id of ['game', 'birth-screen', 'ending-screen', 'replay-screen']) $(id).hidden = true;
+  for (const id of ['game', 'birth-screen', 'ending-screen', 'replay-screen', 'collection-screen'])
+    $(id).hidden = true;
   $('intro').hidden = false;
 }
+const homeShort = { family: '가정', street: '길·마을', shelter: '보호시설' };
+function renderCollection() {
+  const sum = summarize(loadCollection(), COUNTRIES),
+    area = $('collection-content');
+  area.replaceChildren();
+  $('collection-count').textContent = sum.total
+    ? `다 살아본 삶 ${sum.total}개 · 이 기기에만 저장됩니다.`
+    : '아직 끝까지 살아본 삶이 없습니다. 한 생을 마치면 이곳에 남습니다.';
+  const births = el('section', null, 'book-section');
+  births.append(
+    el('h2', `태어난 곳 · ${sum.birthCells.filled} / ${sum.birthCells.all}`),
+    el('p', '나라와 출생 환경마다 몇 번 태어났는지 적습니다.', 'muted'),
+  );
+  const grid = el('div', null, 'birth-grid');
+  grid.append(el('span'), ...HOMES.map((h) => el('span', homeShort[h], 'head')));
+  for (const c of COUNTRIES) {
+    grid.append(el('span', c.name, 'head'));
+    for (const h of HOMES) {
+      const n = sum.births[c.id][h];
+      grid.append(el('span', n ? String(n) : '·', n ? 'cell seen' : 'cell'));
+    }
+  }
+  births.append(grid);
+  const paths = el('section', null, 'book-section'),
+    list = el('ul', null, 'path-list');
+  paths.append(
+    el('h2', `삶의 갈래 · ${sum.paths.filter((p) => p.count).length} / ${sum.paths.length}`),
+    el('p', '어떻게 살다 갔는지를 적습니다. 더 나은 삶과 못한 삶을 가리지 않습니다.', 'muted'),
+  );
+  for (const p of sum.paths) {
+    const li = el('li', null, p.count ? 'seen' : '');
+    li.append(
+      el('strong', p.label),
+      el(
+        'small',
+        p.count
+          ? `${p.count}번 · 처음: ${p.first.name || p.first.breed} (${p.first.countryName})`
+          : '아직 없음',
+      ),
+    );
+    list.append(li);
+  }
+  paths.append(list);
+  const breeds = el('section', null, 'book-section'),
+    chips = el('div', null, 'chips');
+  breeds.append(
+    el('h2', `만난 모습 · ${sum.breeds.filter((b) => b.count).length} / ${sum.breeds.length}`),
+  );
+  for (const b of sum.breeds)
+    chips.append(
+      el('span', b.count ? `${b.breed} ${b.count}` : b.breed, b.count ? 'chip seen' : 'chip'),
+    );
+  breeds.append(chips);
+  area.append(births, paths, breeds);
+  if (sum.recent.length) {
+    const recent = el('section', null, 'book-section'),
+      ol = el('ol', null, 'recent-lives');
+    recent.append(el('h2', '최근에 살아본 삶'));
+    for (const e of sum.recent)
+      ol.append(
+        el(
+          'li',
+          `${e.name ? e.name + ' · ' : ''}${e.breed} · ${e.countryName}의 ${e.birthPlace || homeShort[e.birthHome]}에서 태어나 ${age(e.ageDays)}`,
+        ),
+      );
+    recent.append(ol);
+    area.append(recent);
+  }
+}
+function openCollection() {
+  running = false;
+  for (const id of ['intro', 'game', 'birth-screen', 'ending-screen', 'replay-screen'])
+    $(id).hidden = true;
+  $('collection-screen').hidden = false;
+  renderCollection();
+}
+$('collection-open').onclick = openCollection;
+$('ending-collection').onclick = openCollection;
+$('collection-home').onclick = goHome;
 $('home').onclick = goHome;
 $('birth-home').onclick = goHome;
 $('ending-home').onclick = goHome;
@@ -956,6 +1063,7 @@ function renderBirth() {
     $('birth-facts').append(el('dt', k), el('dd', v));
 }
 function renderEnding() {
+  recordLife();
   if (life.chronicle.endingPage !== endingPage) {
     life.chronicle.endingPage = endingPage;
     save();

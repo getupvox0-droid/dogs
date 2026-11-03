@@ -44,10 +44,14 @@ function harness(s) {
     ];
   const old = Object.fromEntries(keys.map((k) => [k, globalThis[k]]));
   globalThis.document = { getElementById: get, createElement: () => new El(), body: new El() };
+  // The life save lives under its own key; profile and collection keys are kept apart, as in a browser.
+  const other = new Map();
   globalThis.localStorage = {
-    getItem: () => saved,
+    getItem: (k) =>
+      k.includes('profile') || k.includes('collection') ? (other.get(k) ?? null) : saved,
     setItem: (k, v) => {
-      saved = v;
+      if (k.includes('profile') || k.includes('collection')) other.set(k, v);
+      else saved = v;
     },
   };
   globalThis.setInterval = (fn, ms) => {
