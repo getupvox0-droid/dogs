@@ -1,7 +1,14 @@
 import { OPPORTUNITIES } from './opportunities.js';
 import { THREADS } from './threads.js';
 import { FACILITIES, currentFacility } from './people-world.js';
-import { nextStoryBeat, timelineEntries, simulationMode, beatDelay } from './story-runner.js';
+import {
+  nextStoryBeat,
+  timelineEntries,
+  simulationMode,
+  beatDelay,
+  LIFE_LENGTHS,
+  lifeLength,
+} from './story-runner.js';
 import {
   initChronicle,
   setBirthDate,
@@ -91,19 +98,21 @@ function loadProfile() {
     const age = Number(p.myDog?.age);
     return {
       birthMode: p.birthMode in BIRTH_MODES ? p.birthMode : 'explore',
+      lifeLength: p.lifeLength in LIFE_LENGTHS ? p.lifeLength : 'normal',
       myDog: {
         name: cleanName(p.myDog?.name),
         age: Number.isInteger(age) && age >= 0 && age <= 30 ? age : null,
       },
     };
   } catch {
-    return { birthMode: 'explore', myDog: { name: '', age: null } };
+    return { birthMode: 'explore', lifeLength: 'normal', myDog: { name: '', age: null } };
   }
 }
 function saveProfile() {
   const age = $('my-dog-age').value === '' ? null : Math.round(Number($('my-dog-age').value));
   const profile = {
     birthMode: $('birth-mode-real').checked ? 'real' : 'explore',
+    lifeLength: Object.keys(LIFE_LENGTHS).find((k) => $('life-length-' + k).checked) || 'normal',
     myDog: {
       name: cleanName($('my-dog-name').value),
       age: Number.isFinite(age) && age >= 0 && age <= 30 ? age : null,
@@ -113,6 +122,7 @@ function saveProfile() {
     localStorage.setItem(profileKey, JSON.stringify(profile));
   } catch {}
   $('birth-mode-note').textContent = BIRTH_MODES[profile.birthMode].note;
+  $('life-length-note').textContent = LIFE_LENGTHS[profile.lifeLength].note;
   return profile;
 }
 function loadCollection() {
@@ -584,6 +594,10 @@ function render() {
           ? '현실 비율 · 12개 나라의 개 수 추정치 (세계 전체 대표 아님)'
           : '골고루 둘러보기 · 12개 나라와 출생 환경을 같은 확률로',
       ],
+      [
+        '한 생의 길이',
+        `${LIFE_LENGTHS[lifeLength(life)].label} · ${LIFE_LENGTHS[lifeLength(life)].note}`,
+      ],
     ])
       $('world-facts').append(el('dt', k), el('dd', v));
     $('research').textContent =
@@ -636,9 +650,11 @@ $('birth').onclick = () => {
   endingPage = 0;
   recordResume = false;
   closeModal();
+  const profile = saveProfile();
   life = createLife(crypto.getRandomValues(new Uint32Array(1))[0], crypto.randomUUID(), {
-    birthMode: saveProfile().birthMode,
+    birthMode: profile.birthMode,
   });
+  life.chronicle.preferences.lifeLength = profile.lifeLength;
   setBirthDate(
     life,
     new Intl.DateTimeFormat('en-CA', {
@@ -914,6 +930,12 @@ try {
   $('my-dog-age').value = p.myDog.age ?? '';
   $('my-dog-name').onchange = $('my-dog-age').onchange = saveProfile;
   $('birth-mode-note').textContent = BIRTH_MODES[p.birthMode].note;
+  for (const k of Object.keys(LIFE_LENGTHS)) {
+    const r = $('life-length-' + k);
+    r.checked = k === p.lifeLength;
+    r.onchange = saveProfile;
+  }
+  $('life-length-note').textContent = LIFE_LENGTHS[p.lifeLength].note;
 }
 setInterval(() => {
   const now = performance.now();

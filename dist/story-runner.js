@@ -8,6 +8,31 @@ export const STORY_CONFIG = {
   observeWaitMin: 800,
   observeWaitMax: 4500,
 };
+// How long one life takes to watch. Only presentation changes: beats group differently and wait
+// longer or shorter. Every day is still simulated, so the same seed and choices give the same life.
+const ORDINARY = [
+  'smell',
+  'sleep',
+  'world',
+  'play',
+  'family',
+  'street',
+  'shelter',
+  'companion-routine',
+];
+export const LIFE_LENGTHS = {
+  short: {
+    label: '짧게',
+    note: '1배속 기준 약 15~20분 · 평범한 하루는 읽지 않고 지나갑니다.',
+    wait: 0.6,
+  },
+  normal: { label: '보통', note: '1배속 기준 약 25분', wait: 1 },
+  long: { label: '길게', note: '1배속 기준 약 45분 · 장면마다 더 오래 머뭅니다.', wait: 1.8 },
+};
+export function lifeLength(s) {
+  const v = s.chronicle?.preferences?.lifeLength;
+  return v in LIFE_LENGTHS ? v : 'normal';
+}
 export function simulationMode(s) {
   const c = s.chronicle;
   c.preferences.progressMode ??= 'story';
@@ -15,9 +40,14 @@ export function simulationMode(s) {
 }
 export function nextStoryBeat(
   s,
-  { maxDays = STORY_CONFIG.maxDaysPerSlice, observe = simulationMode(s) === 'observe' } = {},
+  {
+    maxDays = STORY_CONFIG.maxDaysPerSlice,
+    observe = simulationMode(s) === 'observe',
+    length = lifeLength(s),
+  } = {},
 ) {
-  const from = s.log.length,
+  const short = length === 'short',
+    from = s.log.length,
     start = s.day;
   let days = 0;
   while (s.alive && days < maxDays) {
@@ -32,11 +62,11 @@ export function nextStoryBeat(
     days++;
     if (s.pending || !s.alive) break;
     const added = s.log.slice(n);
+    if (added.some((e) => importantEvent(e) || e.id === 'decision-outcome')) break;
     if (
+      !short &&
       added.some(
         (e) =>
-          importantEvent(e) ||
-          e.id === 'decision-outcome' ||
           ![
             'smell',
             'sleep',
@@ -50,12 +80,16 @@ export function nextStoryBeat(
       )
     )
       break;
-    if (!observe && added.length) break;
-    if (observe && added.length && days >= 14) break;
+    if (!observe && !short && added.length) break;
+    if ((observe || short) && added.length && days >= (short ? 30 : 14)) break;
   }
   const events = s.log.slice(from);
   const important = events.some(importantEvent);
-  const text = events.map((e) => e.text).join(' ');
+  // In a short life, ordinary days pass without being read; only notable records set the pace.
+  const text = events
+    .filter((e) => !short || !ORDINARY.includes(e.id))
+    .map((e) => e.text)
+    .join(' ');
   return {
     from,
     start,
@@ -64,10 +98,12 @@ export function nextStoryBeat(
     events,
     important,
     text,
-    waitMs: Math.max(
-      observe ? 800 : 1600,
-      Math.min(observe ? 4500 : 9000, readingMs(text) * (observe ? 0.55 : 0.8)),
-    ),
+    waitMs:
+      LIFE_LENGTHS[length].wait *
+      Math.max(
+        observe ? 800 : 1600,
+        Math.min(observe ? 4500 : 9000, readingMs(text) * (observe ? 0.55 : 0.8)),
+      ),
   };
 }
 // Summaries are presentation only; every raw event and every internal day is retained.
