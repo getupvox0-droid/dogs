@@ -207,6 +207,8 @@ export function validateChronicle(s) {
     !c.birth ||
     !c.preferences ||
     !['story', 'observe'].includes(c.preferences.pace) ||
+    (c.preferences.lifeLength !== undefined &&
+      !['short', 'normal', 'long'].includes(c.preferences.lifeLength)) ||
     typeof c.birthAcknowledged !== 'boolean' ||
     !Array.isArray(s.log) ||
     (c.birthDate !== null && !/^\d{4}-\d{2}-\d{2}$/.test(c.birthDate)) ||
