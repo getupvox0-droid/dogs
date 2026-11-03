@@ -220,6 +220,9 @@ export function createLife(seed = Date.now(), lifeId = null, options = {}) {
     birthMode,
     name: null,
     daily: /^\d{4}-\d{2}-\d{2}$/.test(options.daily || '') ? options.daily : null,
+    // Every decision that changed this life, in order, so it can be replayed from the seed
+    // (see share.js). null for saves made before the trail existed.
+    trail: [],
   };
   const born = pickBirth(s, birthMode);
   s.country = born.country;
@@ -263,17 +266,22 @@ export function createLife(seed = Date.now(), lifeId = null, options = {}) {
 function remember(s, id) {
   if (!s.memories.includes(id)) s.memories.push(id);
 }
-export function choose(s, id, expectedUid = null) {
+// Trail tokens: 0–3 the option picked, AUTO when observe mode picked it, SKIPPED when the
+// prompt closed itself without a choice.
+export const TRAIL = { AUTO: 4, SKIPPED: 5 };
+export function choose(s, id, expectedUid = null, { auto = false } = {}) {
   initLifeState(s);
   if (expectedUid && expectedUid !== decisionUid(s)) return false;
   if (!s.pending || !s.alive) return false;
   if (s.pending.id === 'dog-meet' && !canMeetFriend(s)) {
     s.pending = null;
+    s.trail?.push(TRAIL.SKIPPED);
     return false;
   }
   const p = s.pending;
   const uid = decisionUid(s);
   if (s.resolvedDecisions.includes(uid) || !p.options.some((o) => o.id === id)) return false;
+  s.trail?.push(auto ? TRAIL.AUTO : p.options.findIndex((o) => o.id === id));
   const before = {
     ...Object.fromEntries(
       ['health', 'comfort', 'trust', 'stress', 'familyBond', 'dogBond'].map((k) => [k, s[k]]),
@@ -418,6 +426,28 @@ const EVENTS = [
     text: '멀리서 그 손에 남아 있던 냄새를 맡은 것 같다. 고개를 들고 한참 찾는다.',
   },
 ];
+// Called once when the player leaves the birth scene: a known father who lives nearby
+// becomes a relation.
+export function acknowledgeBirth(s) {
+  s.chronicle.phase = 'living';
+  s.chronicle.birthAcknowledged = true;
+  const b = s.chronicle.birth;
+  if (b.father.known && !s.relations.some((r) => r.id === 'father'))
+    s.relations.push({
+      id: 'father',
+      kind: 'father',
+      name: '아비',
+      area: s.areaId,
+      familiarity: b.father.together ? 30 : 0,
+      trust: b.father.together ? 35 : 0,
+      caution: 20,
+      conflict: 0,
+      contacts: b.father.together ? 1 : 0,
+      lastContact: b.father.together ? 0 : null,
+      active: b.father.together,
+      details: `출생 당시 ${b.father.ageYears}살 · ${b.father.breed}`,
+    });
+}
 export function advance(s, days = 1) {
   if (!Number.isInteger(days) || days < 0) throw Error('Invalid days');
   if (days > 0 && s.chronicle?.phase === 'birth') {
@@ -666,12 +696,17 @@ export function restore(raw) {
     typeof s.alive !== 'boolean' ||
     !(s.name == null || (typeof s.name === 'string' && s.name === cleanName(s.name) && s.name)) ||
     !(s.birthMode == null || s.birthMode in BIRTH_MODES) ||
-    !(s.daily == null || /^\d{4}-\d{2}-\d{2}$/.test(s.daily))
+    !(s.daily == null || /^\d{4}-\d{2}-\d{2}$/.test(s.daily)) ||
+    !(
+      s.trail == null ||
+      (Array.isArray(s.trail) && s.trail.every((t) => Number.isInteger(t) && t >= 0 && t <= 5))
+    )
   )
     throw Error('지원하지 않거나 손상된 기록');
   s.name ??= null;
   s.birthMode ??= 'explore';
   s.daily ??= null;
+  s.trail ??= null;
   if (
     s.storyVersion === 2 &&
     (!s.story ||

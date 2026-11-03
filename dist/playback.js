@@ -12,7 +12,7 @@ export function playbackTick(s, running, days) {
     for (let n = 0; n < days && s.alive; n++) {
       if (s.pending) {
         const id = automaticAction(s, random);
-        choose(s, id, decisionUid(s));
+        choose(s, id, decisionUid(s), { auto: true });
       }
       advance(s, 1);
     }

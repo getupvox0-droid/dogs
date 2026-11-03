@@ -53,7 +53,7 @@ export function nextStoryBeat(
   while (s.alive && days < maxDays) {
     if (s.pending) {
       if (s.mode !== 'observe') break;
-      choose(s, automaticAction(s, random), decisionUid(s));
+      choose(s, automaticAction(s, random), decisionUid(s), { auto: true });
       s.presentation = null;
       if (s.log.length > from) break;
     }
