@@ -28,7 +28,8 @@
             </p>
             <div class="actions">
               <button class="primary" id="birth">새로운 삶으로 태어나기 ↗</button
-              ><button id="resume" hidden>이어서 살기</button>
+              ><button id="resume" hidden>이어서 살기</button
+              ><button id="collection-open">도감</button>
             </div>
             <small>12개 국가 · 랜덤 외형 · 제작한 성장 컷과 기억</small>
             <div class="birth-options">
@@ -147,8 +148,18 @@
           ><button id="ending-gallery">주요 장면 모아보기</button
           ><button id="ending-export">기록 파일 저장</button
           ><button id="ending-share">이미지 카드 저장</button
+          ><button id="ending-collection">도감 보기</button
           ><button id="new-life">새로운 삶 시작</button>
         </div>
+      </section>
+      <section id="collection-screen" class="cinematic" hidden aria-labelledby="collection-title">
+        <div class="cinematic-top">
+          <span class="eyebrow">작은 발자국 · 도감</span
+          ><button id="collection-home">처음으로</button>
+        </div>
+        <h1 id="collection-title">지나온 삶들</h1>
+        <p id="collection-count" class="muted"></p>
+        <div id="collection-content"></div>
       </section>
       <section id="replay-screen" class="cinematic" hidden>
         <div class="cinematic-top">
