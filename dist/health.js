@@ -39,7 +39,8 @@ const TYPES = {
     diagnosis: '익숙한 사람이 진료실까지 안고 간다. 검사를 받은 뒤 편안히 쉬도록 돌봄을 받는다.',
   },
 };
-export function beginIllness(s, { log, random }, kind = null) {
+// `symptom` lets a scene describe how this episode began (a crossroad's fall or bite).
+export function beginIllness(s, { log, random }, kind = null, symptom = null) {
   initHealth(s);
   if (s.medical.episode) return;
   const types =
@@ -59,7 +60,7 @@ export function beginIllness(s, { log, random }, kind = null) {
     critical: false,
   });
   s.health = Math.max(5, s.health - 18);
-  log(s, 'illness-onset', TYPES[e.kind].symptom);
+  log(s, 'illness-onset', symptom || TYPES[e.kind].symptom);
 }
 export function healthChoice(s, id, log) {
   const e = s.medical?.episode;

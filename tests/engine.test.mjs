@@ -249,6 +249,7 @@ test('moving and reduced-care arcs complete on their scheduled days', () => {
   const s = createLife(33);
   s.home = 'family';
   s.day = 400;
+  s.crossroads.next = 1e9; // keep crossroads out of this arc's schedule
   s.pending = { id: 'move-house', options: [{ id: 'blanket', text: '담요 찾기' }] };
   choose(s, 'blanket');
   s.pending = { id: 'care-change', options: [{ id: 'near', text: '기대기' }] };

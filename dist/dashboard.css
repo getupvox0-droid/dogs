@@ -1656,3 +1656,26 @@ details.note summary {
 #park-days .chip.seen {
   background: var(--soft);
 }
+/* Crossroads: what only the player knows */
+#decision {
+  display: flex;
+  flex-direction: column;
+}
+#decision > .actions {
+  order: 2;
+}
+.decision-know {
+  order: 1;
+  display: grid;
+  gap: 2px;
+  margin: 10px 0 4px;
+  padding: 10px 12px;
+  border-left: 3px solid #b5651d;
+  background: #fbf1e6;
+  border-radius: 8px;
+  font-size: 14px;
+}
+.decision-know strong {
+  font-size: 12px;
+  color: #8a4b14;
+}
