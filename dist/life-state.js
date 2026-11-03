@@ -28,6 +28,15 @@ export function initLifeState(s) {
   initFamily(s);
   syncRelations(s);
   syncFamily(s);
+  dateRelations(s);
+}
+// Records the day each relation first had contact. Saves from before this existed start tracking
+// on the day they are loaded, so earlier relations keep an unknown first day.
+function dateRelations(s) {
+  s.relationDatesFrom ??= s.day;
+  for (const r of s.relations)
+    if (r.contacts > 0 && r.firstContact == null)
+      r.firstContact = Math.min(s.day, r.lastContact ?? s.day);
 }
 function relation(id, kind, name, area) {
   return {
