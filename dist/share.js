@@ -6,7 +6,7 @@ import { automaticAction } from './decisions.js';
 
 // Bump whenever the simulation changes, so links from an older game are refused instead of
 // silently replaying into a different life.
-export const SHARE_VERSION = 3;
+export const SHARE_VERSION = 4;
 const MAX_DAYS = 30 * 365;
 
 // Two trail tokens (0–5 each) fit one base-36 digit.

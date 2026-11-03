@@ -52,7 +52,7 @@ export function clockDays(clock, now, speed = 1, blocked = false) {
   return 1;
 }
 export function importantEvent(e) {
-  return /^(eyes|ears|walking|weaning|maturity|adopt|moving|settled|reunion|companion-close|companion-parting|litter-born|child-departure|child-reunion|illness-onset|illness-worsening|illness-recovered|vet-visit|clinical-symptom|clinical-diagnosis|surgery-performed|clinical-managed|rescued-shelter|guardian-changed|shelter-return|lost-long-separation|death)$/.test(
+  return /^(eyes|ears|walking|weaning|maturity|adopt|moving|settled|reunion|companion-close|companion-parting|litter-born|child-departure|child-reunion|illness-onset|illness-worsening|illness-recovered|vet-visit|clinical-symptom|clinical-diagnosis|surgery-performed|clinical-managed|rescued-shelter|caught-shelter|shelter-escape|gate-out|guardian-changed|shelter-return|lost-long-separation|death)$/.test(
     e.id,
   );
 }

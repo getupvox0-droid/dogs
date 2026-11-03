@@ -40,6 +40,18 @@ export const PATHS = [
     label: '수술 뒤 회복하는 시간을 보냈다',
     test: (e) => has(e, 'surgery-performed'),
   },
+  {
+    id: 'followed-home',
+    label: '길에서 사람을 따라가 집이 생겼다',
+    test: (e) => e.adoptionRoute === 'followed-home',
+  },
+  { id: 'caught', label: '붙잡혀 보호시설로 갔다', test: (e) => has(e, 'caught-shelter') },
+  { id: 'lost', label: '집을 나섰다가 길을 잃었다', test: (e) => has(e, 'gate-out') },
+  {
+    id: 'escaped',
+    label: '보호시설을 빠져나와 길로 돌아갔다',
+    test: (e) => has(e, 'shelter-escape'),
+  },
   { id: 'long-life', label: '열다섯 해를 넘겼다', test: (e) => e.ageDays >= 15 * 365 },
 ];
 const EVENT_IDS = [
@@ -50,6 +62,9 @@ const EVENT_IDS = [
   'litter-born',
   'guardian-changed',
   'surgery-performed',
+  'caught-shelter',
+  'gate-out',
+  'shelter-escape',
 ];
 
 export function emptyCollection() {

@@ -7,6 +7,7 @@ import { canAct } from './species.js';
 import { beginIllness } from './health.js';
 import { josa } from './korean.js';
 import { SETTINGS, LURES, HAZARDS, SETTING_FAMILIES, settingFamily } from './crossroad-parts.js';
+import { applyTurn } from './life-turns.js';
 
 const YEAR = 365;
 const has = (s, mark) => s.crossroads?.marks.includes(mark);
@@ -15,10 +16,11 @@ const motherNear = (s) => s.relations.some((r) => r.kind === 'mother' && r.activ
 const senior = (s) => s.day >= 8 * YEAR;
 const frail = (s) => s.health < 50;
 // One outcome: weight(s) decides how likely it is; hurt starts an injury, die ends the life.
+// turn moves the life somewhere else (life-turns.js): [kind, the record that says so].
 const o = (
   weight,
   text,
-  { delta = {}, mark = null, hurt = null, die = null, illness = null } = {},
+  { delta = {}, mark = null, hurt = null, die = null, illness = null, turn = null } = {},
 ) => ({
   weight: typeof weight === 'function' ? weight : () => weight,
   text,
@@ -27,7 +29,25 @@ const o = (
   hurt,
   die,
   illness,
+  turn,
 });
+// The records written when a crossroad turns a life.
+const TURN_TEXT = {
+  family: [
+    'family',
+    '손 냄새를 따라 한참 걸었다. 그 사람은 문 앞에서 멈추더니 안쪽에 물그릇을 놓았다. 오늘 밤은 지붕 아래에서 잔다.',
+  ],
+  rescued: [
+    'rescued',
+    '길가에 웅크린 나를 누군가 천으로 감싸 안아 들었다. 소독약 냄새가 나는 곳에서 상처를 살피는 손길이 느껴진다.',
+  ],
+  caught: [
+    'caught',
+    '흔들리는 차에 실려 낯선 곳에 내려졌다. 철문 너머로 여러 개의 울음소리가 들린다.',
+  ],
+  lost: ['lost', '익숙한 문도 익숙한 목소리도 없는 곳에서 밤을 맞는다.'],
+  escaped: ['escaped', '철문 냄새가 멀어졌다. 이제 길이 잠자리가 된다.'],
+};
 
 export const CROSSROADS = [
   {
@@ -471,9 +491,14 @@ export const CROSSROADS = [
         id: 'approach',
         text: '꼬리를 낮게 흔들며 다가가 냄새를 맡는다',
         outcomes: [
-          o(60, '손바닥의 고기를 받아먹었다. 사람은 한동안 같은 자리에 앉아 있었다.', {
+          o(45, '손바닥의 고기를 받아먹었다. 사람은 한동안 같은 자리에 앉아 있었다.', {
             delta: { hunger: -15, trust: 8 },
             mark: 'trusting',
+          }),
+          o(15, '고기를 받아먹고 일어선 사람을 따라 걸었다.', {
+            delta: { hunger: -15, trust: 10 },
+            mark: 'trusting',
+            turn: TURN_TEXT.family,
           }),
           o(30, '다가가자 다른 손이 목을 잡으려 했다. 몸을 비틀어 빠져나왔다.', {
             delta: { trust: -10, stress: 12 },
@@ -624,10 +649,14 @@ export function generatedText(s, g) {
     .join(' ');
 }
 function generate(s, state) {
-  const pool = combos(s, state);
+  let pool = combos(s, state);
   if (!pool.length) return null;
-  const n = mix(s.seed + s.day, 2721),
-    c = pool[n % pool.length],
+  const n = mix(s.seed + s.day, 2721);
+  // A street life is short and turns on people: give the moments that can change it
+  // (someone calling, someone with a net) a fair share before it is over.
+  const people = pool.filter((c) => c.lure === 'person' || c.hazard === 'hostile-human');
+  if (s.home === 'street' && people.length && n % 10 < 4) pool = people;
+  const c = pool[(n >>> 4) % pool.length],
     L = LURES[c.lure];
   return {
     setting: c.setting,
@@ -657,16 +686,59 @@ function generatedOptions(s, g) {
       mark: `${g.hazard}-fear`,
       illness: H.illness,
     };
+  // How a moment can turn a life: a family dog lost, a shelter dog slipping out, a street dog
+  // caught or picked up hurt, or a street dog following someone home. [share, outcome text, turn]
+  const hitTurn =
+    // A dog that was lost once keeps closer to home after that.
+    g.hazard === 'lost' && s.home === 'family' && !has(s, 'wanderer')
+      ? [
+          0.35,
+          '냄새를 따라가다 보니 아는 냄새가 하나도 없었다. 해가 지도록 돌아가는 길을 찾지 못했다.',
+          TURN_TEXT.lost,
+          { hurt: null, delta: H.cost || {}, mark: 'wanderer' },
+        ]
+      : g.hazard === 'lost' && s.home === 'shelter' && ['open', 'scent', 'dogcall'].includes(g.lure)
+        ? [
+            0.7,
+            '울타리 틈을 빠져나와 한참을 달렸다. 돌아보니 아는 냄새가 보이지 않는다.',
+            TURN_TEXT.escaped,
+            { hurt: null, delta: H.cost || {}, mark: 'wanderer' },
+          ]
+        : g.hazard === 'hostile-human' && s.home === 'street'
+          ? [
+              0.6,
+              '그물 같은 것이 몸을 덮었다. 버둥거릴수록 더 조여 왔다.',
+              TURN_TEXT.caught,
+              { hurt: null, mark: 'hand-shy' },
+            ]
+          : !H.noInjury && s.home === 'street'
+            ? [0.4, H.hit, TURN_TEXT.rescued, {}]
+            : null;
+  const follow =
+    g.lure === 'person' && s.home === 'street'
+      ? Math.min(0.6, 0.35 + (has(s, 'trusting') ? 0.15 : 0) + (s.trust >= 50 ? 0.1 : 0))
+      : 0;
+  const hits = (w) =>
+    hitTurn
+      ? [
+          o(w * (1 - hitTurn[0]), hit.text, hit),
+          o(w * hitTurn[0], hitTurn[1], { ...hit, ...hitTurn[3], turn: hitTurn[2] }),
+        ]
+      : [o(w, hit.text, hit)];
+  const rewards = (w, opts) => [
+    o(w * (1 - follow), reward(), opts),
+    o(w * follow, reward(), { ...opts, mark: 'trusting', turn: TURN_TEXT.family }),
+  ];
   const rush = [
     o(deadly ? base * share : 0, H.hit, { die: H.death }),
-    o(base * (deadly ? 1 - share : 1), hit.text, hit),
-    o((1 - base) * 0.9, reward(), { delta: L.delta, mark: 'bold' }),
+    ...hits(base * (deadly ? 1 - share : 1)),
+    ...rewards((1 - base) * 0.9, { delta: L.delta, mark: 'bold' }),
     o((1 - base) * 0.1, L.lack, { delta: L.miss }),
   ];
   const careful = [
-    o(base * 0.35, hit.text, hit),
+    ...hits(base * 0.35),
     o(base * 0.5, `${H.near} ${L.lack}`, { delta: L.miss, mark: `${g.hazard}-wise` }),
-    o((1 - base * 0.85) * 0.6, reward(), { delta: L.delta }),
+    ...rewards((1 - base * 0.85) * 0.6, { delta: L.delta }),
     o((1 - base * 0.85) * 0.4, L.lack, { delta: L.miss }),
   ];
   const options = [
@@ -796,6 +868,7 @@ export function crossroadChoice(s, p, id, { log, remember }) {
   state.history.push({ id: c.id, day: s.day, option: id, outcome: option.outcomes.indexOf(out) });
   remember(s, `crossroad:${c.id}:${id}`);
   if (out.hurt) beginIllness(s, { log, random: () => 0 }, out.illness || 'injury', out.hurt);
+  if (out.turn && !out.die) applyTurn(s, out.turn, { log, remember });
   if (out.die) {
     s.alive = false;
     s.pending = null;
