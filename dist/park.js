@@ -1,10 +1,12 @@
 // Rainbow Bridge Park: what may be left there. Shared by the page and the Worker (worker/park-api.js),
 // so both sides apply the same limits. The park never ranks: no score, no "best" (docs/PHASE3.md).
-export const PARK_KINDS = ['game', 'real'];
+// game and real are park memorials; shared is a life passed around in "함께 나눈 삶" (3-4).
+export const PARK_KINDS = ['game', 'real', 'shared'];
+export const SPACE_KINDS = { park: ['game', 'real'], lives: ['shared'] };
 export const PARK_LIMITS = {
   name: 20,
   breed: 30,
-  message: { game: 60, real: 200 },
+  message: { game: 60, real: 200, shared: 40 },
   code: 1500,
   dailyPosts: 3,
   reportsToHide: 3,
@@ -47,8 +49,11 @@ export function validateMemorial(body) {
   const message = cleanText(body.message);
   const fail = textProblem(message, PARK_LIMITS.message[body.kind]);
   if (fail) return { error: `한마디: ${fail}` };
-  if (body.kind === 'game') {
+  if (body.kind === 'game' || body.kind === 'shared') {
     const d = body;
+    // A shared life is there to be replayed, so it must carry its share code.
+    if (body.kind === 'shared' && d.code == null)
+      return { error: '다시 볼 수 있는 삶만 나눌 수 있습니다.' };
     const name = cleanText(d.name);
     if (
       !optStr(d.code, PARK_LIMITS.code) ||
@@ -74,7 +79,7 @@ export function validateMemorial(body) {
       if (p) return { error: `이름: ${p}` };
     }
     return {
-      kind: 'game',
+      kind: body.kind,
       message,
       data: {
         code: d.code ?? null,

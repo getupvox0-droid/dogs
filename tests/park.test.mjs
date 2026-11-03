@@ -228,3 +228,59 @@ test('recent order pages without repeats; random shows one', async () => {
   assert.deepEqual(new Set(all), new Set(ids));
   assert.equal((await call(e, 'GET', '/api/memorials?order=random')).body.memorials.length, 1);
 });
+
+test('shared lives stay apart from the park and group by daily dog', async () => {
+  const e = env(),
+    shared = { ...gameLife, kind: 'shared', message: '같은 강아지, 다른 길' };
+  assert.ok(validateMemorial({ ...shared, code: null }).error);
+  assert.ok(validateMemorial({ ...shared, message: '가'.repeat(41) }).error);
+  await call(e, 'POST', '/api/memorials', { body: gameLife, now: 1000 });
+  await call(e, 'POST', '/api/memorials', { body: { ...shared, daily: '2026-11-03' }, now: 2000 });
+  await call(e, 'POST', '/api/memorials', {
+    body: { ...shared, daily: '2026-11-03' },
+    device: B,
+    now: 3000,
+  });
+  const other = await call(e, 'POST', '/api/memorials', {
+    body: { ...shared, daily: '2026-11-04' },
+    device: B,
+    now: 4000,
+  });
+  await call(e, 'POST', '/api/memorials', { body: shared, now: 5000 });
+
+  assert.deepEqual(
+    (await call(e, 'GET', '/api/memorials')).body.memorials.map((m) => m.kind),
+    ['game'],
+  );
+  assert.equal(
+    (await call(e, 'GET', '/api/memorials?order=random')).body.memorials[0].kind,
+    'game',
+  );
+  assert.equal((await call(e, 'GET', '/api/lives')).body.memorials.length, 4);
+  const day = (await call(e, 'GET', '/api/lives?daily=2026-11-03')).body.memorials;
+  assert.equal(day.length, 2);
+  assert.ok(day.every((m) => m.daily === '2026-11-03' && m.kind === 'shared'));
+  assert.equal((await call(e, 'GET', '/api/lives?daily=11-03')).status, 400);
+  assert.deepEqual((await call(e, 'GET', '/api/lives/days')).body.days, [
+    { daily: '2026-11-04', lives: 1 },
+    { daily: '2026-11-03', lives: 2 },
+  ]);
+  assert.equal(
+    (await call(e, 'POST', `/api/memorials/${other.body.memorial.id}/candle`)).status,
+    400,
+  );
+});
+
+test('the park and shared lives have separate daily limits', async () => {
+  const e = env(),
+    day = 86400000,
+    shared = { ...gameLife, kind: 'shared' };
+  for (let i = 0; i < PARK_LIMITS.dailyPosts; i++)
+    await call(e, 'POST', '/api/memorials', { body: gameLife, now: day });
+  assert.equal((await call(e, 'POST', '/api/memorials', { body: shared, now: day })).status, 201);
+  for (let i = 1; i < PARK_LIMITS.dailyPosts; i++)
+    await call(e, 'POST', '/api/memorials', { body: shared, now: day });
+  const over = await call(e, 'POST', '/api/memorials', { body: shared, now: day });
+  assert.equal(over.status, 429);
+  assert.match(over.body.error, /나눌 수/);
+});

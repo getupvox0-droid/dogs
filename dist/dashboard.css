@@ -1646,3 +1646,13 @@ details.note summary {
 #park-preview .park-card {
   max-width: 420px;
 }
+#park-days {
+  margin-top: 12px;
+}
+#park-days .chip {
+  cursor: pointer;
+  background: var(--paper);
+}
+#park-days .chip.seen {
+  background: var(--soft);
+}

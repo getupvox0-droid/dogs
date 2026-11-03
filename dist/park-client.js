@@ -37,11 +37,11 @@ function rememberLeft(lifeId) {
     localStorage.setItem(LEFT_KEY, JSON.stringify([...leftLives(), lifeId].slice(-200)));
   } catch {}
 }
-// A finished game life as the park keeps it: only what the book and the card already show.
-export function gameMemorial(s) {
+// A finished game life as the park or the shared lives keep it: only what the book and the card show.
+export function gameMemorial(s, kind = 'game') {
   const e = lifeEntry(s);
   return {
-    kind: 'game',
+    kind,
     code: canShare(s) ? encodeLife(s) : null,
     name: e.name,
     breed: e.breed,
@@ -113,6 +113,11 @@ async function humanToken(box) {
 }
 export const listMemorials = (order, cursor) =>
   api(`/api/memorials?order=${order}${cursor ? `&cursor=${encodeURIComponent(cursor)}` : ''}`);
+export const listLives = (daily, cursor) =>
+  api(
+    `/api/lives?${daily ? `daily=${daily}&` : ''}${cursor ? `cursor=${encodeURIComponent(cursor)}` : ''}`,
+  );
+export const listDays = () => api('/api/lives/days');
 export async function leaveMemorial(body, box, lifeId) {
   const out = await api('/api/memorials', {
     method: 'POST',

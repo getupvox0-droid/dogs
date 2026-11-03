@@ -65,3 +65,33 @@ test('the daily mark survives saving and bad values are rejected', () => {
   assert.equal(restore(serialize(s)).daily, '2026-11-03');
   assert.throws(() => restore(JSON.stringify({ ...JSON.parse(serialize(s)), daily: 'today' })));
 });
+
+test('two daily-dog lives with different choices are kept apart in the book', async () => {
+  const { createDailyLife } = await import('../dist/daily.js');
+  const E = await import('../dist/engine.js');
+  const { decisionUid } = await import('../dist/decisions.js');
+  const { lifeEntry, addLife, emptyCollection } = await import('../dist/collection.js');
+  const { lifeKey } = await import('../dist/share.js');
+  const live = (shift) => {
+    const s = createDailyLife('2026-11-03');
+    E.acknowledgeBirth(s);
+    let k = 0;
+    while (s.alive) {
+      if (!s.pending) {
+        E.advance(s, 1 + (k % 5));
+        continue;
+      }
+      k++;
+      E.choose(s, s.pending.options[(k + shift) % s.pending.options.length].id, decisionUid(s));
+    }
+    return s;
+  };
+  const a = live(0),
+    b = live(1),
+    again = live(0);
+  assert.notEqual(lifeKey(a), lifeKey(b));
+  assert.equal(lifeKey(a), lifeKey(again));
+  assert.match(lifeKey(a), /^daily-2026-11-03-/);
+  const book = [a, b, again].reduce((c, s) => addLife(c, lifeEntry(s)), emptyCollection());
+  assert.equal(book.lives.length, 2);
+});
