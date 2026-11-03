@@ -7,17 +7,27 @@ import {
   setBirthDate,
   dayDate,
   birthStory,
+  birthWorld,
   endingData,
   memoryTimeline,
   biography,
 } from './chronicle.js';
+import { BIRTH_MODES, countryFacts, countryShares, homeShares } from './birth-odds.js';
 import { TIME_CONFIG, clockState, clockDays, readingMs, readingGate } from './time-config.js';
 import { visualFor, diagramSvg, PHASE_NAMES } from './visuals.js';
 import { downloadLifeCard } from './share-card.js';
 import { UK_REFERENCE } from './statistics.js';
 import { resolveChoice, playbackTick } from './playback.js';
 import { lookOf, imageFor, photoLogIndices, atlasFrame } from './visuals.js';
-import { createLife, advance, serialize, restore } from './engine.js';
+import {
+  createLife,
+  advance,
+  serialize,
+  restore,
+  setName,
+  cleanName,
+  COUNTRIES,
+} from './engine.js';
 import { initLifeState, syncRelations } from './life-state.js';
 import { decisionUid, currentSituation, importantRecords, eventKind } from './decisions.js';
 import { developmentStage, speciesOf } from './species.js';
@@ -59,6 +69,51 @@ const names = {
   happiness: '행복',
 };
 const homeName = { family: '함께 사는 집', street: '길거리 생활권', shelter: '보호시설' };
+// Who would give this dog its name, depending on where it was born.
+const namer = {
+  family: '가족이 부르는 이름',
+  street: '동네 사람들이 부르는 이름',
+  shelter: '보호소에서 붙인 이름',
+};
+const profileKey = 'dogs-life-profile';
+// Player-side settings (birth mode, their own dog). Kept apart from the life save.
+function loadProfile() {
+  try {
+    const p = JSON.parse(localStorage.getItem(profileKey)) || {};
+    const age = Number(p.myDog?.age);
+    return {
+      birthMode: p.birthMode in BIRTH_MODES ? p.birthMode : 'explore',
+      myDog: {
+        name: cleanName(p.myDog?.name),
+        age: Number.isInteger(age) && age >= 0 && age <= 30 ? age : null,
+      },
+    };
+  } catch {
+    return { birthMode: 'explore', myDog: { name: '', age: null } };
+  }
+}
+function saveProfile() {
+  const age = $('my-dog-age').value === '' ? null : Math.round(Number($('my-dog-age').value));
+  const profile = {
+    birthMode: $('birth-mode-real').checked ? 'real' : 'explore',
+    myDog: {
+      name: cleanName($('my-dog-name').value),
+      age: Number.isFinite(age) && age >= 0 && age <= 30 ? age : null,
+    },
+  };
+  try {
+    localStorage.setItem(profileKey, JSON.stringify(profile));
+  } catch {}
+  $('birth-mode-note').textContent = BIRTH_MODES[profile.birthMode].note;
+  return profile;
+}
+const pct = (x) => (x >= 0.1 ? `${Math.round(x * 100)}%` : `${(x * 100).toFixed(1)}%`);
+const displayName = (s) => (s.name ? `${s.name} · ${s.breed}` : s.breed);
+// Picks the Korean particle by whether the last syllable has a final consonant (e.g. 보리는 / 밤톨은).
+function josa(word, withFinal, withoutFinal) {
+  const c = word.charCodeAt(word.length - 1) - 0xac00;
+  return word + (c >= 0 && c <= 11171 && c % 28 ? withFinal : withoutFinal);
+}
 const kindNames = {
   mother: '어미',
   father: '아비',
@@ -368,7 +423,7 @@ function render() {
   if (routeScreens()) return;
   const w = life.worldModel,
     look = lookOf(life);
-  $('identity').textContent = life.breed;
+  $('identity').textContent = displayName(life);
   $('age').textContent = age(life.day);
   $('stage').textContent = developmentStage(life);
   $('life-status').textContent = !life.alive
@@ -496,7 +551,12 @@ function render() {
       ],
       ['돌봄 여건', `${Math.round(w.care)}/100 · 게임 설정`],
       ['먹이 여건', `${Math.round(w.resource)}/100 · 게임 설정`],
-      ['출생 추첨', '6개 국가 균등 추첨 · 실제 출생 비율 미적용'],
+      [
+        '출생 추첨',
+        life.birthMode === 'real'
+          ? '현실 비율 · 6개 나라의 개 수 추정치 (세계 전체 대표 아님)'
+          : '골고루 둘러보기 · 6개 나라와 출생 환경을 같은 확률로',
+      ],
     ])
       $('world-facts').append(el('dt', k), el('dd', v));
     $('research').textContent =
@@ -549,7 +609,9 @@ $('birth').onclick = () => {
   endingPage = 0;
   recordResume = false;
   closeModal();
-  life = createLife(crypto.getRandomValues(new Uint32Array(1))[0], crypto.randomUUID());
+  life = createLife(crypto.getRandomValues(new Uint32Array(1))[0], crypto.randomUUID(), {
+    birthMode: saveProfile().birthMode,
+  });
   setBirthDate(
     life,
     new Intl.DateTimeFormat('en-CA', {
@@ -734,6 +796,18 @@ document.addEventListener?.('keydown', (e) => {
 try {
   $('resume').hidden = !localStorage.getItem(key);
 } catch {}
+{
+  const p = loadProfile();
+  for (const mode of Object.keys(BIRTH_MODES)) {
+    const r = $('birth-mode-' + mode);
+    r.checked = mode === p.birthMode;
+    r.onchange = saveProfile;
+  }
+  $('my-dog-name').value = p.myDog.name;
+  $('my-dog-age').value = p.myDog.age ?? '';
+  $('my-dog-name').onchange = $('my-dog-age').onchange = saveProfile;
+  $('birth-mode-note').textContent = BIRTH_MODES[p.birthMode].note;
+}
 setInterval(() => {
   const now = performance.now();
   if (
@@ -839,12 +913,25 @@ function routeScreens() {
 function renderBirth() {
   const c = life.chronicle,
     b = c.birth;
-  $('birth-date').textContent = `${dayDate(life, 0)} · ${b.country} · 개 / ${life.breed}`;
-  $('birth-place').textContent = b.place;
+  $('birth-date').textContent = `${dayDate(life, 0)} · 개 / ${life.breed}`;
+  $('birth-place').textContent = birthWorld(life);
   $('birth-portrait').replaceChildren(visualNode(life, { id: 'birth', day: 0 }));
   $('birth-image-note').textContent =
     '출생 컷은 외형 참고 표현이며, 아래 환경은 이 삶의 출생 설정입니다.';
   $('birth-story').textContent = birthStory(life);
+  $('name-who').textContent = `${namer[b.home] || '이 아이를 부를 이름'} (선택)`;
+  if (document.activeElement !== $('dog-name')) $('dog-name').value = life.name || '';
+  const facts = countryFacts(life.country.id),
+    world = [
+      `이 나라의 반려견 · ${facts.owned}`,
+      `이 나라에서 길·마을에 사는 개 · ${facts.freeRoaming}`,
+    ];
+  if (life.birthMode === 'real')
+    world.push(
+      `이번 삶은 현실 비율로 뽑혔습니다. 6개 나라 중 이 나라 ${pct(countryShares(COUNTRIES)[life.country.id])} · 그 안에서 이 출생 환경 ${pct(homeShares(life.country.id)[b.home])}`,
+    );
+  if (facts.sources.length) world.push(`출처 · ${facts.sources.join(' · ')}`);
+  $('birth-world').replaceChildren(...world.map((t) => el('p', t)));
   $('birth-facts').replaceChildren();
   const parent = (p) =>
     !p.known
@@ -898,7 +985,7 @@ function renderEnding() {
       picture.append(context);
     }
     text.append(
-      el('h2', `${life.breed} · ${data.age}`),
+      el('h2', `${displayName(life)} · ${data.age}`),
       el('p', `${data.deathDate} · ${data.place}`),
       el('p', `사인 · ${data.cause}`),
       el('p', data.last),
@@ -916,6 +1003,23 @@ function renderEnding() {
     ])
       facts.append(el('dt', k), el('dd', v));
     area.append(facts);
+    const mine = loadProfile().myDog;
+    if (mine.name || mine.age != null) {
+      const who = mine.name || '우리 집 강아지',
+        box = el('div', null, 'compare');
+      box.append(
+        el('h3', `${josa(who, '과', '와')} 나란히`),
+        el(
+          'p',
+          `${josa(who, '은', '는')} ${mine.age != null ? `지금 ${mine.age}살이고, ` : ''}집에서 사람과 함께 지냅니다.`,
+        ),
+        el(
+          'p',
+          `${josa(life.name || '이 아이', '은', '는')} ${data.birth.country}의 ${data.birth.place}에서 태어나 ${data.age}을 살았습니다.`,
+        ),
+      );
+      area.append(box);
+    }
     for (const e of data.memories
       .filter((e) =>
         ['adopt', 'moving', 'companion-close', 'litter-born', 'reunion'].includes(e.id),
@@ -985,6 +1089,7 @@ function renderReplay() {
   $('replay-next').disabled = replay.index === replay.records.length - 1;
 }
 $('start-life').onclick = () => {
+  setName(life, $('dog-name').value);
   life.chronicle.phase = 'living';
   life.chronicle.birthAcknowledged = true;
   const b = life.chronicle.birth;

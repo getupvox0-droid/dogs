@@ -1350,3 +1350,107 @@ footer {
     font-size: 10px;
   }
 }
+/* Birth options on the intro screen */
+.birth-options {
+  display: grid;
+  gap: 14px;
+  margin-top: 22px;
+  max-width: 520px;
+}
+.birth-options fieldset {
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  padding: 12px 14px;
+  margin: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 18px;
+  align-items: center;
+}
+.birth-options legend {
+  font-size: 13px;
+  font-weight: 650;
+  padding: 0 4px;
+}
+.birth-options label {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 14px;
+}
+.birth-options small {
+  flex-basis: 100%;
+  color: var(--muted);
+}
+.birth-options input[type='text'],
+.birth-options input:not([type]),
+.birth-options input[type='number'],
+.name-field input {
+  border: 1px solid var(--line);
+  background: var(--paper);
+  border-radius: 8px;
+  padding: 6px 10px;
+  min-width: 0;
+}
+.birth-options input[type='number'] {
+  width: 70px;
+}
+/* Birth scene: what the puppy senses vs. what only the player knows */
+.senses {
+  font-size: 18px;
+  line-height: 1.9;
+  margin: 8px 0 18px;
+}
+.name-field {
+  display: grid;
+  gap: 6px;
+  font-size: 13px;
+  color: var(--muted);
+  margin-bottom: 18px;
+  max-width: 320px;
+}
+.world-info {
+  background: var(--soft);
+  border-radius: 14px;
+  padding: 14px 16px;
+  margin-bottom: 18px;
+}
+.world-info h2 {
+  font-size: 17px;
+  margin: 6px 0 8px;
+}
+.world-info p {
+  font-size: 13px;
+  color: var(--muted);
+  margin: 0 0 6px;
+}
+.world-info .facts {
+  margin-top: 12px;
+}
+details.note summary {
+  cursor: pointer;
+  color: var(--ink);
+}
+/* Ending: compare with the player's own dog */
+.compare {
+  background: var(--soft);
+  border-radius: 14px;
+  padding: 14px 16px;
+  margin: 18px 0;
+}
+.compare h3 {
+  margin: 0 0 8px;
+  font-size: 16px;
+}
+.compare p {
+  margin: 0 0 6px;
+}
+@media (max-width: 740px) {
+  .senses {
+    font-size: 16px;
+  }
+  .world-info .facts {
+    grid-template-columns: 1fr;
+    gap: 2px;
+  }
+}

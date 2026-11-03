@@ -44,6 +44,7 @@ import { changeArea, canMeetFriend } from './social.js';
 import { EXTRA_EVENTS } from './daily-events.js';
 import { initAppearance, validateAppearance } from './visuals.js';
 import { initStories, growth, storyStep, storyChoice } from './stories.js';
+import { BIRTH_MODES, countryShares, homeShares, weightedPick } from './birth-odds.js';
 export const VERSION = 1;
 // All weights and risks in this prototype are design assumptions, not population estimates.
 export const COUNTRIES = [
@@ -81,7 +82,37 @@ function log(s, id, text) {
     facility: s.environmentModel ? currentFacility(s) : null,
   });
 }
-export function createLife(seed = Date.now(), lifeId = null) {
+export const NAME_MAX = 12;
+export function cleanName(raw) {
+  return String(raw ?? '')
+    .replace(/[\u0000-\u001f\u007f]/g, '')
+    .trim()
+    .slice(0, NAME_MAX);
+}
+export function setName(s, raw) {
+  const name = cleanName(raw);
+  s.name = name || null;
+  return s.name;
+}
+// Both modes draw exactly two random numbers so a seed's later RNG stream stays aligned.
+function pickBirth(s, mode) {
+  const a = random(s),
+    b = random(s);
+  if (mode !== 'real')
+    return {
+      country: COUNTRIES[Math.floor(a * COUNTRIES.length)],
+      home: HOMES[Math.floor(b * HOMES.length)],
+    };
+  const shares = countryShares(COUNTRIES),
+    country = weightedPick(
+      COUNTRIES.map((c) => [c, shares[c.id]]),
+      a,
+    );
+  return { country, home: weightedPick(Object.entries(homeShares(country.id)), b) };
+}
+const HOMES = ['family', 'street', 'shelter'];
+export function createLife(seed = Date.now(), lifeId = null, options = {}) {
+  const birthMode = options.birthMode === 'real' ? 'real' : 'explore';
   const s = {
     version: VERSION,
     dataVersion: 'prototype-1',
@@ -99,9 +130,12 @@ export function createLife(seed = Date.now(), lifeId = null) {
     recent: {},
     log: [],
     world: null,
+    birthMode,
+    name: null,
   };
-  s.country = pick(s, COUNTRIES);
-  s.home = pick(s, ['family', 'street', 'shelter']);
+  const born = pickBirth(s, birthMode);
+  s.country = born.country;
+  s.home = born.home;
   s.breed = pick(s, BREEDS[s.country.id]);
   s.sex = pick(s, ['암컷', '수컷']);
   s.temperament = pick(s, ['호기심 많은', '조심스러운', '사람을 좋아하는']);
@@ -540,10 +574,14 @@ export function restore(raw) {
         s.pending.options.every((o) => typeof o.id === 'string' && typeof o.text === 'string'))
     ) ||
     !COUNTRIES.some((c) => c.id === s.country?.id) ||
-    !['family', 'street', 'shelter'].includes(s.home) ||
-    typeof s.alive !== 'boolean'
+    !HOMES.includes(s.home) ||
+    typeof s.alive !== 'boolean' ||
+    !(s.name == null || (typeof s.name === 'string' && s.name === cleanName(s.name) && s.name)) ||
+    !(s.birthMode == null || s.birthMode in BIRTH_MODES)
   )
     throw Error('지원하지 않거나 손상된 기록');
+  s.name ??= null;
+  s.birthMode ??= 'explore';
   if (
     s.storyVersion === 2 &&
     (!s.story ||

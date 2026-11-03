@@ -79,20 +79,33 @@ export function ageText(d) {
       ? `${Math.floor(d / 30)}개월 ${d % 30}일`
       : `${Math.floor(d / 365)}년 ${Math.floor((d % 365) / 30)}개월`;
 }
+// What the newborn itself can sense: no place names, no judgement. Eyes and ear canals are still closed.
 export function birthStory(s) {
-  const b = s.chronicle.birth;
+  const b = s.chronicle.birth,
+    f = s.worldModel.origin.factors || {},
+    others = b.litterSize ? b.litterSize - 1 : b.wards || 0;
   return [
-    `${b.country} · ${b.place}에서 태어났다.`,
-    b.litterSize
-      ? `${b.litterSize}마리의 새끼 ${b.order ? '중 ' + b.order + '번째로' : '중 하나로'} 세상에 왔다.`
-      : b.wards
-        ? `이곳에는 함께 돌봄을 받는 작은 몸 ${b.wards}마리가 있다. 혈연 형제인지는 알 수 없다.`
-        : '함께 태어난 형제의 수는 확인되지 않았다.',
+    '눈이 감겨 있다. 세상은 냄새와 온기로만 온다.',
     b.mother.together
-      ? '어미의 체온과 젖에 기대 몸을 붙인다.'
-      : '어미는 곁에 없다. 따뜻한 천과 돌보는 손길에 의지한다.',
-    '아직 눈을 뜨거나 혼자 걷지 못한다. 온기와 먹이를 받아들이며 첫날을 보낸다.',
-  ].join(' ');
+      ? '젖 냄새가 나는 쪽으로 코를 밀어 넣는다. 큰 몸이 숨 쉴 때마다 함께 오르내린다.'
+      : '익숙한 젖 냄새는 없다. 천의 온기와 가끔 다가오는 손에 몸을 붙인다.',
+    others > 1
+      ? '작고 따뜻한 몸들이 옆에서 꿈틀거리며 서로 밀어낸다.'
+      : others === 1
+        ? '작고 따뜻한 몸 하나가 옆에 붙어 있다.'
+        : '옆에서 꿈틀거리는 다른 몸은 느껴지지 않는다.',
+    f.bedding ? `몸 아래로 ${f.bedding}의 감촉이 있다.` : '',
+    (f.noise ?? 0) > 60
+      ? '소리는 아직 들리지 않지만, 바닥을 타고 진동이 자주 전해진다.'
+      : '소리는 아직 들리지 않는다. 바닥은 대체로 조용하다.',
+  ]
+    .filter(Boolean)
+    .join(' ');
+}
+// What only the player knows: where this is and what is known about dogs there.
+export function birthWorld(s) {
+  const b = s.chronicle.birth;
+  return `${b.country} · ${b.region} · ${b.place}`;
 }
 export function memoryTimeline(s) {
   const ids = new Set([
