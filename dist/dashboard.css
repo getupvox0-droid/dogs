@@ -1533,3 +1533,12 @@ details.note summary {
   padding-left: 20px;
   font-size: 14px;
 }
+/* Ending album: who was near */
+.relation-card.until-end {
+  border-color: var(--green);
+  background: var(--soft);
+}
+.recent-lives small {
+  display: block;
+  color: var(--muted);
+}

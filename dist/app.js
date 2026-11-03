@@ -32,6 +32,7 @@ import { TIME_CONFIG, clockState, clockDays, readingMs, readingGate } from './ti
 import { visualFor, diagramSvg, PHASE_NAMES } from './visuals.js';
 import { downloadLifeCard } from './share-card.js';
 import { josa } from './korean.js';
+import { KIND_NAMES, companionAlbum, longestCompanion } from './album.js';
 import { UK_REFERENCE } from './statistics.js';
 import { resolveChoice, playbackTick } from './playback.js';
 import { lookOf, imageFor, photoLogIndices, atlasFrame } from './visuals.js';
@@ -147,17 +148,6 @@ function recordLife() {
 }
 const pct = (x) => (x >= 0.1 ? `${Math.round(x * 100)}%` : `${(x * 100).toFixed(1)}%`);
 const displayName = (s) => (s.name ? `${s.name} · ${s.breed}` : s.breed);
-const kindNames = {
-  mother: '어미',
-  father: '아비',
-  sibling: '형제',
-  caregiver: '보호자',
-  visitor: '자주 만나는 사람',
-  dog: '다른 개',
-  companion: '곁을 찾는 동료',
-  offspring: '자녀',
-  'young-companion': '함께 돌본 새끼',
-};
 function el(tag, text, cls) {
   const node = document.createElement(tag);
   if (text != null) node.textContent = text;
@@ -259,7 +249,7 @@ function renderRelations() {
   for (const r of life.relations) {
     const card = el('article', null, 'relation-card');
     card.append(
-      el('small', `${kindNames[r.kind] || r.kind} · ${r.active ? '현재 생활권' : '기억 속 관계'}`),
+      el('small', `${KIND_NAMES[r.kind] || r.kind} · ${r.active ? '현재 생활권' : '기억 속 관계'}`),
       el('h3', r.name),
       el(
         'p',
@@ -741,14 +731,18 @@ function renderCollection() {
   if (sum.recent.length) {
     const recent = el('section', null, 'book-section'),
       ol = el('ol', null, 'recent-lives');
-    recent.append(el('h2', '최근에 살아본 삶'));
-    for (const e of sum.recent)
-      ol.append(
-        el(
-          'li',
-          `${e.name ? e.name + ' · ' : ''}${e.breed} · ${e.countryName}의 ${e.birthPlace || homeShort[e.birthHome]}에서 태어나 ${age(e.ageDays)}`,
-        ),
+    recent.append(el('h2', '최근에 살아본 삶과 곁에 있던 존재'));
+    for (const e of sum.recent) {
+      const li = el(
+        'li',
+        `${e.name ? e.name + ' · ' : ''}${e.breed} · ${e.countryName}의 ${e.birthPlace || homeShort[e.birthHome]}에서 태어나 ${age(e.ageDays)}`,
       );
+      if (e.companion)
+        li.append(
+          el('small', `가장 오래 곁에 있던 존재 · ${e.companion.name} (${e.companion.kindName})`),
+        );
+      ol.append(li);
+    }
     recent.append(ol);
     area.append(recent);
   }
@@ -1089,6 +1083,7 @@ function renderEnding() {
   const data = endingData(life);
   for (let i = 0; i < 4; i++)
     $('end-tab-' + i).setAttribute('aria-pressed', String(i === endingPage));
+  $('end-tab-album').setAttribute('aria-pressed', String(endingPage === 5));
   $('ending-title').textContent = [
     '마지막 순간을 곁에서',
     '살아온 날들을 돌아봅니다.',
@@ -1162,10 +1157,49 @@ function renderEnding() {
     }
     area.append(list);
   } else if (endingPage === 3) area.append(el('p', data.biography, 'biography'));
+  else if (endingPage === 5) renderAlbum(area);
   else renderGallery(area);
   $('ending-prev').disabled = endingPage === 0;
   $('ending-next').disabled = endingPage >= 3;
   $('ending-next').textContent = endingPage === 2 ? '작은 전기 읽기 ↗' : '다음 장면 ↗';
+}
+function renderAlbum(area) {
+  $('ending-title').textContent = '곁에 있던 존재들';
+  const album = companionAlbum(life),
+    longest = longestCompanion(life);
+  if (!album.length) {
+    area.append(el('p', '기록에 남은 만남이 없습니다.'));
+    return;
+  }
+  if (longest) {
+    const box = el('div', null, 'compare');
+    box.append(
+      el('h3', '가장 오래 곁에 있던 존재'),
+      el(
+        'p',
+        longest.name === longest.kindName ? longest.name : `${longest.name} · ${longest.kindName}`,
+      ),
+      el('p', `${longest.span} · ${longest.together}`, 'muted'),
+    );
+    area.append(box);
+  }
+  const grid = el('div', null, 'relation-grid');
+  for (const e of album) {
+    const card = el('article', null, 'relation-card' + (e.untilEnd ? ' until-end' : ''));
+    card.append(
+      el(
+        'small',
+        [e.name === e.kindName ? null : e.kindName, e.untilEnd ? '마지막까지 곁에' : null]
+          .filter(Boolean)
+          .join(' · ') || ' ',
+      ),
+      el('h3', e.name),
+      el('p', e.span),
+      el('small', e.together),
+    );
+    grid.append(card);
+  }
+  area.append(grid);
 }
 function renderGallery(area) {
   $('ending-title').textContent = '그날의 모습과 기록';
@@ -1246,8 +1280,12 @@ for (let i = 0; i < 4; i++)
     endingPage = i;
     renderEnding();
   };
+$('end-tab-album').onclick = () => {
+  endingPage = 5;
+  renderEnding();
+};
 $('ending-prev').onclick = () => {
-  endingPage = Math.max(0, endingPage - 1);
+  endingPage = endingPage > 3 ? 3 : Math.max(0, endingPage - 1);
   renderEnding();
 };
 $('ending-next').onclick = () => {

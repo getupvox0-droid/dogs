@@ -2,6 +2,7 @@
 // Paths describe what happened, never how lucky a life was (see docs/ROADMAP.md, principle 2).
 import { BREED_IMAGES } from './visuals.js';
 import { cleanName } from './engine.js';
+import { longestCompanion } from './album.js';
 
 export const COLLECTION_KEY = 'dogs-life-collection';
 export const COLLECTION_MAX = 200;
@@ -75,6 +76,8 @@ function validEntry(e) {
     Number.isInteger(e.ageDays) &&
     e.ageDays >= 0 &&
     Array.isArray(e.events) &&
+    (e.companion == null ||
+      (typeof e.companion.name === 'string' && typeof e.companion.kindName === 'string')) &&
     (e.name === null || typeof e.name === 'string')
   );
 }
@@ -96,6 +99,9 @@ export function lifeEntry(s) {
     ageDays: s.day,
     events: EVENT_IDS.filter((id) => s.log.some((e) => e.id === id)),
     birthDate: s.chronicle.birthDate,
+    companion: (({ name, kindName } = {}) => (name ? { name, kindName } : null))(
+      longestCompanion(s) || undefined,
+    ),
   };
 }
 // Adds or replaces a life by id. Returns a new collection.
