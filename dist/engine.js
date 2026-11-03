@@ -47,19 +47,93 @@ import { initStories, growth, storyStep, storyChoice } from './stories.js';
 import { BIRTH_MODES, countryShares, homeShares, weightedPick } from './birth-odds.js';
 export const VERSION = 1;
 // All weights and risks in this prototype are design assumptions, not population estimates.
+// `areas` gives a country flavour to a birth setting's space type (see backgrounds.js).
+// Each label must fit every setting of that space; spaces without a label show no region.
 export const COUNTRIES = [
-  { id: 'KR', name: '대한민국', place: '주택가', climate: 'temperate', weight: 1 },
-  { id: 'JP', name: '일본', place: '바닷가 마을', climate: 'temperate', weight: 1 },
-  { id: 'IN', name: '인도', place: '시장 골목', climate: 'hot', weight: 1 },
-  { id: 'US', name: '미국', place: '교외 마을', climate: 'temperate', weight: 1 },
-  { id: 'TR', name: '튀르키예', place: '도시 골목', climate: 'temperate', weight: 1 },
-  { id: 'CA', name: '캐나다', place: '작은 마을', climate: 'cold', weight: 1 },
-  { id: 'BR', name: '브라질', place: '언덕 동네', climate: 'hot', weight: 1 },
-  { id: 'MX', name: '멕시코', place: '고원 도시 주택가', climate: 'temperate', weight: 1 },
-  { id: 'CN', name: '중국', place: '도시 아파트 단지', climate: 'temperate', weight: 1 },
-  { id: 'PH', name: '필리핀', place: '바랑가이 골목', climate: 'hot', weight: 1 },
-  { id: 'NG', name: '나이지리아', place: '도시 외곽 마을', climate: 'hot', weight: 1 },
-  { id: 'TH', name: '태국', place: '사원 근처 동네', climate: 'hot', weight: 1 },
+  {
+    id: 'KR',
+    name: '대한민국',
+    climate: 'temperate',
+    weight: 1,
+    areas: { indoor: '아파트 단지가 많은 도시', rural: '산이 가까운 시골' },
+  },
+  {
+    id: 'JP',
+    name: '일본',
+    climate: 'temperate',
+    weight: 1,
+    areas: { rural: '논이 이어진 시골', village: '오래된 골목 동네' },
+  },
+  {
+    id: 'IN',
+    name: '인도',
+    climate: 'hot',
+    weight: 1,
+    areas: { market: '사람과 소가 함께 다니는 거리', village: '흙길 마을' },
+  },
+  {
+    id: 'US',
+    name: '미국',
+    climate: 'temperate',
+    weight: 1,
+    areas: { garden: '넓은 주택가', rural: '농장이 흩어진 시골' },
+  },
+  {
+    id: 'TR',
+    name: '튀르키예',
+    climate: 'temperate',
+    weight: 1,
+    areas: { market: '바닷가의 오래된 동네', rural: '고원 지대의 시골' },
+  },
+  {
+    id: 'CA',
+    name: '캐나다',
+    climate: 'cold',
+    weight: 1,
+    areas: { garden: '눈이 오래 남는 주택가', rural: '숲이 가까운 시골' },
+  },
+  {
+    id: 'BR',
+    name: '브라질',
+    climate: 'hot',
+    weight: 1,
+    areas: { indoor: '해안 대도시', rural: '열대 숲이 가까운 시골' },
+  },
+  {
+    id: 'MX',
+    name: '멕시코',
+    climate: 'temperate',
+    weight: 1,
+    areas: { indoor: '고원 도시', rural: '건조한 고원의 시골' },
+  },
+  {
+    id: 'CN',
+    name: '중국',
+    climate: 'temperate',
+    weight: 1,
+    areas: { indoor: '고층 아파트가 많은 도시', rural: '논밭이 넓은 시골' },
+  },
+  {
+    id: 'PH',
+    name: '필리핀',
+    climate: 'hot',
+    weight: 1,
+    areas: { village: '바랑가이 동네', rural: '야자나무가 많은 시골' },
+  },
+  {
+    id: 'NG',
+    name: '나이지리아',
+    climate: 'hot',
+    weight: 1,
+    areas: { market: '오토바이와 사람으로 붐비는 동네', village: '도시 외곽 마을' },
+  },
+  {
+    id: 'TH',
+    name: '태국',
+    climate: 'hot',
+    weight: 1,
+    areas: { village: '사원 근처 동네', rural: '논이 이어진 시골' },
+  },
 ];
 // Every breed here needs an illustration family in visuals.js BREED_IMAGES.
 const BREEDS = {

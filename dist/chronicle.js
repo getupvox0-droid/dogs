@@ -19,7 +19,7 @@ export function initChronicle(s, fresh = false) {
     legacy: !fresh,
     birth: {
       country: s.country.name,
-      region: s.country.place,
+      region: s.country.areas?.[o.space] ?? null,
       place: o.label,
       home: o.home,
       litterSize: litter,
@@ -105,7 +105,7 @@ export function birthStory(s) {
 // What only the player knows: where this is and what is known about dogs there.
 export function birthWorld(s) {
   const b = s.chronicle.birth;
-  return `${b.country} · ${b.region} · ${b.place}`;
+  return [b.country, b.region, b.place].filter(Boolean).join(' · ');
 }
 export function memoryTimeline(s) {
   const ids = new Set([
