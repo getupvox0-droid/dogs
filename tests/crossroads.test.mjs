@@ -94,6 +94,65 @@ test('a life with crossroads replays from its share link, and old links are refu
     again.log.map((e) => [e.day, e.id, e.text]),
     s.log.map((e) => [e.day, e.id, e.text]),
   );
-  const old = encodeLife(s).replace(/^v2\./, 'v1.');
+  const old = encodeLife(s).replace(/^v3./, 'v2.');
   assert.throws(() => decodeLife(old));
+});
+
+test('generated crossroads come often, vary within a life, and stay well formed', async () => {
+  const { HAZARDS } = await import('../dist/crossroad-parts.js');
+  let total = 0,
+    ratio = 0,
+    lives = 0;
+  for (let seed = 1; seed <= 40; seed++) {
+    const s = createLife(seed * 17, null, { birthMode: 'explore' });
+    acknowledgeBirth(s);
+    const combos = [];
+    let k = 0;
+    while (s.alive) {
+      if (!s.pending) {
+        advance(s, 1);
+        continue;
+      }
+      const p = s.pending;
+      if (p.id === 'crossroad:gen') {
+        combos.push(`${p.gen.setting}/${p.gen.lure}/${p.gen.hazard}`);
+        assert.ok(!/undefined|null/.test(p.text + p.know), p.text);
+        // The player's line never leaks into the dog's senses.
+        assert.ok(!p.text.includes(p.know));
+        if (p.gen.hazard === 'poison') assert.ok(['food', 'water'].includes(p.gen.lure));
+        assert.ok(p.options.length >= 3 && p.options.length <= 4);
+        assert.equal(p.know, HAZARDS[p.gen.hazard].know(p.gen.setting));
+      }
+      k++;
+      choose(s, p.options[k % p.options.length].id, decisionUid(s));
+    }
+    if (!combos.length) continue;
+    total += combos.length;
+    ratio += new Set(combos).size / combos.length;
+    lives++;
+  }
+  assert.ok(total / lives >= 8, `generated per life ${total / lives}`);
+  assert.ok(ratio / lives >= 0.85, `distinct within a life ${ratio / lives}`);
+});
+
+test('a waiting generated crossroad survives a save, and staying put never hurts', () => {
+  let s;
+  for (let seed = 222; ; seed++) {
+    s = createLife(seed, null, { birthMode: 'explore' });
+    acknowledgeBirth(s);
+    while (s.alive && s.pending?.id !== 'crossroad:gen') {
+      if (s.pending) choose(s, s.pending.options.at(-1).id, decisionUid(s));
+      else advance(s, 1);
+    }
+    if (s.pending) break;
+  }
+  const back = restore(serialize(s));
+  assert.deepEqual(back.pending.gen, s.pending.gen);
+  const broken = JSON.parse(serialize(s));
+  broken.pending.gen.hazard = 'dragon';
+  assert.throws(() => restore(JSON.stringify(broken)));
+  const before = s.log.length;
+  choose(s, 'avoid', decisionUid(s));
+  assert.ok(s.alive);
+  assert.ok(!s.log.slice(before).some((e) => e.id === 'illness-onset'));
 });

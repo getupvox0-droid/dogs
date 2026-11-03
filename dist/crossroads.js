@@ -5,6 +5,8 @@
 import { mix } from './world.js';
 import { canAct } from './species.js';
 import { beginIllness } from './health.js';
+import { josa } from './korean.js';
+import { SETTINGS, LURES, HAZARDS, SETTING_FAMILIES, settingFamily } from './crossroad-parts.js';
 
 const YEAR = 365;
 const has = (s, mark) => s.crossroads?.marks.includes(mark);
@@ -13,13 +15,18 @@ const motherNear = (s) => s.relations.some((r) => r.kind === 'mother' && r.activ
 const senior = (s) => s.day >= 8 * YEAR;
 const frail = (s) => s.health < 50;
 // One outcome: weight(s) decides how likely it is; hurt starts an injury, die ends the life.
-const o = (weight, text, { delta = {}, mark = null, hurt = null, die = null } = {}) => ({
+const o = (
+  weight,
+  text,
+  { delta = {}, mark = null, hurt = null, die = null, illness = null } = {},
+) => ({
   weight: typeof weight === 'function' ? weight : () => weight,
   text,
   delta,
   mark,
   hurt,
   die,
+  illness,
 });
 
 export const CROSSROADS = [
@@ -551,7 +558,166 @@ export const CROSSROADS = [
 
 export function initCrossroads(s) {
   s.crossroads ??= { version: 1, next: 20, seen: [], marks: [], history: [] };
+  s.crossroads.genNext ??= 75 + (mix(s.seed, 2720) % 45);
+  s.crossroads.used ??= [];
   return s.crossroads;
+}
+
+// Generated crossroads: setting × lure × hazard, plus the dog's need and who is near.
+// The same lure and hazard never meet twice in one life while other pairs remain.
+const WHO = {
+  mother: '어미의 냄새가 등 뒤에 있다.',
+  sibling: '형제 하나가 옆에 바짝 붙어 있다.',
+  person: '익숙한 사람의 목소리가 조금 떨어진 곳에서 들린다.',
+};
+const WHO_OPTION = {
+  mother: '어미 곁으로 파고든다',
+  sibling: '형제 옆에 몸을 붙이고 기다린다',
+  person: '익숙한 목소리 쪽으로 돌아간다',
+};
+// The mother is only near where the litter lives, never out on a walk or a road.
+const DEN = ['yard', 'kitchen', 'kennel', 'barn', 'field', 'alley', 'shelteryard'];
+function companionNear(s, setting) {
+  if (s.day < 120 && motherNear(s) && DEN.includes(setting)) return 'mother';
+  if (s.day < 365 && siblings(s).length) return 'sibling';
+  if (s.home !== 'street' && s.caregiverId) return 'person';
+  return null;
+}
+function needLine(s, lure) {
+  if (s.needs.hunger > 65) return '배 속이 비어 있다.';
+  if (s.needs.thirst > 65 && lure !== 'water') return '혀가 바싹 마른다.';
+  if (s.needs.fatigue > 75) return '몸이 무겁다.';
+  return null;
+}
+const pick = (list, n) => list[n % list.length];
+function combos(s, state) {
+  const out = [];
+  for (const setting of [...new Set(settingFamilyList(s))]) {
+    const st = SETTINGS[setting];
+    for (const lure of st.lures) {
+      const L = LURES[lure];
+      if ((L.min && s.day < L.min) || (L.ok && !L.ok(s))) continue;
+      for (const hazard of st.hazards) {
+        const H = HAZARDS[hazard];
+        if ((H.ok && !H.ok(s)) || (H.lures && !H.lures.includes(lure))) continue;
+        out.push({ setting, lure, hazard, fresh: !state.used.includes(`${lure}:${hazard}`) });
+      }
+    }
+  }
+  const fresh = out.filter((c) => c.fresh);
+  return fresh.length ? fresh : out;
+}
+const settingFamilyList = (s) => SETTING_FAMILIES[settingFamily(s)];
+export function generatedText(s, g) {
+  const st = SETTINGS[g.setting],
+    L = LURES[g.lure],
+    H = HAZARDS[g.hazard];
+  return [
+    needLine(s, g.lure),
+    pick(st.text, g.v),
+    L.sense(g.item, josa),
+    pick(H.cue, g.v),
+    has(s, `${g.hazard}-fear`) ? H.fear : null,
+    g.who ? WHO[g.who] : null,
+  ]
+    .filter(Boolean)
+    .join(' ');
+}
+function generate(s, state) {
+  const pool = combos(s, state);
+  if (!pool.length) return null;
+  const n = mix(s.seed + s.day, 2721),
+    c = pool[n % pool.length],
+    L = LURES[c.lure];
+  return {
+    setting: c.setting,
+    lure: c.lure,
+    hazard: c.hazard,
+    item: L.items ? pick(L.items, n >>> 4) : null,
+    v: (n >>> 8) % 4,
+    who: companionNear(s, c.setting),
+  };
+}
+// The risk model for a generated moment. Rushing is the most rewarding and the most dangerous;
+// being careful halves the reward and cuts the danger to about a third; staying never hurts.
+function generatedOptions(s, g) {
+  const L = LURES[g.lure],
+    H = HAZARDS[g.hazard],
+    young = s.day < 180,
+    wise = has(s, `${g.hazard}-wise`) ? 0.6 : 1,
+    body = (young ? 1.3 : 1) * (senior(s) ? 1.3 : 1) * (frail(s) ? 1.2 : 1),
+    base = { 3: 0.26, 2: 0.28, 1: 0.32 }[H.severity] * body * wise,
+    deadly = H.death && (H.severity === 3 || young || senior(s) || frail(s)),
+    share = H.severity === 3 ? 0.09 : 0.06;
+  const reward = () => L.reward(g.item, josa),
+    hit = {
+      text: H.hit,
+      hurt: H.noInjury ? null : H.hurt,
+      delta: H.cost || {},
+      mark: `${g.hazard}-fear`,
+      illness: H.illness,
+    };
+  const rush = [
+    o(deadly ? base * share : 0, H.hit, { die: H.death }),
+    o(base * (deadly ? 1 - share : 1), hit.text, hit),
+    o((1 - base) * 0.9, reward(), { delta: L.delta, mark: 'bold' }),
+    o((1 - base) * 0.1, L.lack, { delta: L.miss }),
+  ];
+  const careful = [
+    o(base * 0.35, hit.text, hit),
+    o(base * 0.5, `${H.near} ${L.lack}`, { delta: L.miss, mark: `${g.hazard}-wise` }),
+    o((1 - base * 0.85) * 0.6, reward(), { delta: L.delta }),
+    o((1 - base * 0.85) * 0.4, L.lack, { delta: L.miss }),
+  ];
+  const options = [
+    { id: 'rush', text: L.rush, outcomes: rush },
+    { id: 'careful', text: L.careful, outcomes: careful },
+  ];
+  if (g.who)
+    options.push({
+      id: 'near',
+      text: WHO_OPTION[g.who],
+      outcomes: [
+        o(1, `곁의 온기에 몸을 붙였다. ${L.lack}`, {
+          delta: { ...L.miss, stress: -4, [g.who === 'person' ? 'familyBond' : 'dogBond']: 4 },
+        }),
+      ],
+    });
+  options.push({ id: 'avoid', text: L.avoid, outcomes: [o(1, L.lack, { delta: L.miss })] });
+  return options;
+}
+function generatedKnow(g) {
+  return HAZARDS[g.hazard].know(g.setting);
+}
+function generatedStep(s, state, decision) {
+  if (
+    s.day < state.genNext ||
+    !canAct(s, 'walk') ||
+    s.medical?.episode ||
+    s.clinical?.active ||
+    s.story?.lost
+  )
+    return false;
+  const g = generate(s, state);
+  if (!g) return false;
+  const options = generatedOptions(s, g);
+  if (
+    !decision(
+      s,
+      'crossroad:gen',
+      generatedText(s, g),
+      options.map((x) => [x.id, x.text]),
+    )
+  )
+    return false;
+  s.pending.know = generatedKnow(g);
+  s.pending.gen = g;
+  state.used.push(`${g.lure}:${g.hazard}`);
+  const gap = mix(s.seed + s.day, 2722);
+  state.genNext =
+    s.day +
+    (s.day < 2 * YEAR ? 50 + (gap % 60) : senior(s) ? 150 + (gap % 150) : 110 + (gap % 130));
+  return true;
 }
 function eligible(s, c) {
   return (
@@ -571,11 +737,12 @@ const PLACE_BOUND = ['street-meat', 'cold-night', 'big-dog', 'stranger-hand', 'h
 // Every 2–5 months in the first two years (when most street lives turn), then every 6–14 months.
 export function crossroadStep(s, { decision }) {
   const state = initCrossroads(s);
-  if (s.pending || s.day < state.next) return false;
+  if (s.pending) return false;
+  if (s.day < state.next) return generatedStep(s, state, decision);
   let pool = CROSSROADS.filter((c) => eligible(s, c));
   if (!pool.length) {
     state.next = s.day + 20;
-    return false;
+    return generatedStep(s, state, decision);
   }
   const bound = pool.filter((c) => PLACE_BOUND.includes(c.id));
   if (bound.length) pool = bound;
@@ -608,7 +775,13 @@ export function pickOutcome(s, option) {
 }
 export function crossroadChoice(s, p, id, { log, remember }) {
   if (!p.id.startsWith('crossroad:')) return false;
-  const c = CROSSROADS.find((x) => 'crossroad:' + x.id === p.id),
+  const c =
+      p.id === 'crossroad:gen' && p.gen
+        ? {
+            id: `gen:${p.gen.setting}:${p.gen.lure}:${p.gen.hazard}`,
+            options: generatedOptions(s, p.gen),
+          }
+        : CROSSROADS.find((x) => 'crossroad:' + x.id === p.id),
     option = c?.options.find((x) => x.id === id);
   if (!option) return false;
   const out = pickOutcome(s, option),
@@ -622,7 +795,7 @@ export function crossroadChoice(s, p, id, { log, remember }) {
   if (out.mark && !state.marks.includes(out.mark)) state.marks.push(out.mark);
   state.history.push({ id: c.id, day: s.day, option: id, outcome: option.outcomes.indexOf(out) });
   remember(s, `crossroad:${c.id}:${id}`);
-  if (out.hurt) beginIllness(s, { log, random: () => 0 }, 'injury', out.hurt);
+  if (out.hurt) beginIllness(s, { log, random: () => 0 }, out.illness || 'injury', out.hurt);
   if (out.die) {
     s.alive = false;
     s.pending = null;
@@ -633,7 +806,19 @@ export function crossroadChoice(s, p, id, { log, remember }) {
   return true;
 }
 export function validCrossroad(id) {
-  return CROSSROADS.some((c) => 'crossroad:' + c.id === id);
+  return id === 'crossroad:gen' || CROSSROADS.some((c) => 'crossroad:' + c.id === id);
+}
+// A generated moment waiting in a save must still name parts that exist.
+export function validGenerated(g) {
+  return (
+    g &&
+    g.setting in SETTINGS &&
+    g.lure in LURES &&
+    g.hazard in HAZARDS &&
+    Number.isInteger(g.v) &&
+    (g.who == null || g.who in WHO) &&
+    (g.item == null || (LURES[g.lure].items || []).includes(g.item))
+  );
 }
 export function validateCrossroads(s) {
   const c = s.crossroads;
@@ -644,7 +829,9 @@ export function validateCrossroads(s) {
       !c.seen.every(validId) ||
       !Array.isArray(c.marks) ||
       !c.marks.every((m) => typeof m === 'string') ||
-      !Array.isArray(c.history))
+      !Array.isArray(c.history) ||
+      (c.used != null && (!Array.isArray(c.used) || !c.used.every((u) => typeof u === 'string'))) ||
+      (s.pending?.id === 'crossroad:gen' && !validGenerated(s.pending.gen)))
   )
     throw Error('손상된 갈림길 기록');
 }
