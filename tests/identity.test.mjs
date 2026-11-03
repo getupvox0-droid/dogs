@@ -16,7 +16,7 @@ test('every country has sourced dog figures and shares sum to one', () => {
     assert.ok(d, c.id);
     for (const f of [d.owned, d.freeRoaming]) {
       assert.ok(f.value > 0 && typeof f.source === 'string' && f.source.length > 0);
-      assert.ok(['medium', 'low', 'assumption'].includes(f.confidence));
+      assert.ok(['medium', 'low', 'assumption', 'derived'].includes(f.confidence));
     }
     const h = homeShares(c.id);
     assert.ok(Math.abs(h.family + h.street + h.shelter - 1) < 1e-9);
@@ -44,7 +44,8 @@ test('explore mode is the default and stays uniform', () => {
     assert.equal(s.birthMode, 'explore');
     count[s.country.id] = (count[s.country.id] || 0) + 1;
   }
-  for (const c of COUNTRIES) assert.ok(Math.abs(count[c.id] / n - 1 / 6) < 0.03, c.id);
+  for (const c of COUNTRIES)
+    assert.ok(Math.abs(count[c.id] / n - 1 / COUNTRIES.length) < 0.02, c.id);
 });
 
 test('real mode follows the sourced country and home shares', () => {
@@ -104,6 +105,24 @@ test('the newborn senses its world without place names or judgement', () => {
     for (const word of [s.country.name, s.country.place, s.chronicle.birth.place, '불쌍', '운이'])
       assert.ok(!text.includes(word), `${seed}: ${word}`);
   }
+});
+
+test('real mode is no longer dominated by one country', () => {
+  const shares = countryShares(COUNTRIES);
+  assert.ok(COUNTRIES.length >= 12);
+  for (const c of COUNTRIES) assert.ok(shares[c.id] < 0.3, c.id);
+  assert.ok(shares.US * homeShares('US').family < 0.25);
+});
+
+test('countries known only by a total derive the owned part', () => {
+  const d = COUNTRY_DOGS.TH;
+  assert.equal(d.owned.confidence, 'derived');
+  assert.ok(Math.abs(d.owned.value + d.freeRoaming.value - d.total.value) < 0.01);
+  const f = countryFacts('TH');
+  assert.equal(f.total, '약 670만 마리');
+  assert.match(f.owned, /전체에서 계산/);
+  assert.equal(f.sources.length, 1);
+  assert.equal(countryFacts('KR').total, null);
 });
 
 test('country facts only quote sourced numbers', () => {

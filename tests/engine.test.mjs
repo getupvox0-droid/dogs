@@ -2,7 +2,7 @@ import { writeFileSync } from 'node:fs';
 import { automaticAction } from '../dist/decisions.js';
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { createLife, advance, choose, serialize, restore } from '../dist/engine.js';
+import { createLife, advance, choose, serialize, restore, COUNTRIES } from '../dist/engine.js';
 function play(s, chunk = 1, selector = null) {
   let guard = 0;
   while (s.alive && guard++ < 20000) {
@@ -119,7 +119,7 @@ test('1000 lives: valid states, conditional events and no events after death', (
     routes[s.adoptionRoute || s.home] = (routes[s.adoptionRoute || s.home] || 0) + 1;
     histories.add(JSON.stringify(s.log.map((e) => [e.day, e.id, e.action, e.purpose])));
   }
-  for (const n of Object.values(counts)) assert.ok(n > 110 && n < 230);
+  for (const n of Object.values(counts)) assert.ok(Math.abs(n - 1000 / COUNTRIES.length) < 40);
   assert.equal(histories.size, 1000);
   assert.ok(templates.size >= 60);
   assert.ok(Object.keys(purposes).length >= 7);

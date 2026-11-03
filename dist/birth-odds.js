@@ -2,15 +2,25 @@
 // Every number carries its source and confidence; values without a source are marked as game assumptions.
 // Units: millions of dogs.
 export const BIRTH_MODES = {
-  explore: { label: '골고루 둘러보기', note: '6개 나라와 출생 환경을 같은 확률로 뽑습니다.' },
+  explore: { label: '골고루 둘러보기', note: '12개 나라와 출생 환경을 같은 확률로 뽑습니다.' },
   real: {
     label: '현실 비율',
-    note: '나라별 개 수와 길·마을에서 사는 개의 추정치로 뽑습니다. 현재 6개 나라만 포함합니다.',
+    note: '나라별 개 수와 길·마을에서 사는 개의 추정치로 뽑습니다. 현재 12개 나라만 포함합니다.',
   },
 };
 // Newborns in shelters or foster care: no comparable data, so a small fixed share is assumed.
 export const SHELTER_SHARE = { value: 0.02, source: '게임용 가정', confidence: 'assumption' };
 const fig = (value, source, confidence, year = null) => ({ value, source, confidence, year });
+// When only a total is known, the owned part is what remains after the free-roaming part.
+const fromTotal = (total, freeRoaming) => ({
+  total,
+  owned: fig(
+    Math.round((total.value - freeRoaming.value) * 100) / 100,
+    '전체 추정치에서 길·마을 개를 뺀 값',
+    'derived',
+  ),
+  freeRoaming,
+});
 export const COUNTRY_DOGS = {
   KR: {
     owned: fig(4.99, '농림축산식품부 동물복지 국민의식조사 기반 추정', 'medium', 2024),
@@ -36,6 +46,34 @@ export const COUNTRY_DOGS = {
     owned: fig(7.9, '캐나다 동물건강연구소(CAHI) 추정 · 출처 확인 필요', 'low', 2022),
     freeRoaming: fig(0.2, '전국 추정치 없음 · 게임용 가정', 'assumption'),
   },
+  BR: {
+    owned: fig(67.8, '브라질 반려동물산업협회(Abinpet)·Instituto Pet Brasil', 'medium', 2023),
+    freeRoaming: fig(3, '전국 추정치 없음 · 게임용 가정', 'assumption'),
+  },
+  MX: {
+    owned: fig(43.8, '멕시코 통계청(INEGI) ENBIARE 가구 조사', 'medium', 2021),
+    freeRoaming: fig(
+      5,
+      '전국 추정치 없음 ("70%가 길에 산다"는 주장은 근거 불분명) · 게임용 가정',
+      'assumption',
+    ),
+  },
+  CN: {
+    owned: fig(52.58, '중국 반려동물산업 백서 (도시 지역만 집계)', 'medium', 2024),
+    freeRoaming: fig(20, '농촌 개와 길 개의 전국 추정치 없음 · 게임용 가정', 'assumption'),
+  },
+  PH: fromTotal(
+    fig(23.29, 'Animals 학술지 가구 조사 기반 추정', 'low', 2022),
+    fig(2, '전국 추정치 없음 · 게임용 가정', 'assumption'),
+  ),
+  NG: fromTotal(
+    fig(12.97, '광견병 연구의 개·사람 비율(1:16.3) 추정', 'low', 2023),
+    fig(3.9, '전체의 30%로 둔 게임용 가정', 'assumption'),
+  ),
+  TH: fromTotal(
+    fig(6.7, '태국 축산개발부(DLD) 조사', 'low', 2016),
+    fig(0.75, '태국 축산개발부(DLD) 조사', 'low', 2016),
+  ),
 };
 export function homeShares(countryId) {
   const d = COUNTRY_DOGS[countryId],
@@ -71,15 +109,23 @@ export function weightedPick(entries, r) {
 // Short, player-facing summary of what is known about dogs in a country.
 export function countryFacts(countryId) {
   const d = COUNTRY_DOGS[countryId],
+    n = (x) => `약 ${Math.round(x.value * 100).toLocaleString('ko-KR')}만 마리`,
     m = (x) =>
       x.confidence === 'assumption'
         ? '공식 추정치 없음'
-        : `약 ${Math.round(x.value * 100).toLocaleString('ko-KR')}만 마리`;
+        : x.confidence === 'derived'
+          ? `${n(x)} (전체에서 계산)`
+          : n(x);
   return {
+    total: d.total ? n(d.total) : null,
     owned: m(d.owned),
     freeRoaming: m(d.freeRoaming),
-    sources: [d.owned, d.freeRoaming]
-      .filter((x) => x.confidence !== 'assumption')
-      .map((x) => `${x.source}${x.year ? ` (${x.year})` : ''}`),
+    sources: [
+      ...new Set(
+        [d.total, d.owned, d.freeRoaming]
+          .filter((x) => x && !['assumption', 'derived'].includes(x.confidence))
+          .map((x) => `${x.source}${x.year ? ` (${x.year})` : ''}`),
+      ),
+    ],
   };
 }
