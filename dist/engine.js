@@ -219,6 +219,7 @@ export function createLife(seed = Date.now(), lifeId = null, options = {}) {
     world: null,
     birthMode,
     name: null,
+    daily: /^\d{4}-\d{2}-\d{2}$/.test(options.daily || '') ? options.daily : null,
   };
   const born = pickBirth(s, birthMode);
   s.country = born.country;
@@ -664,11 +665,13 @@ export function restore(raw) {
     !HOMES.includes(s.home) ||
     typeof s.alive !== 'boolean' ||
     !(s.name == null || (typeof s.name === 'string' && s.name === cleanName(s.name) && s.name)) ||
-    !(s.birthMode == null || s.birthMode in BIRTH_MODES)
+    !(s.birthMode == null || s.birthMode in BIRTH_MODES) ||
+    !(s.daily == null || /^\d{4}-\d{2}-\d{2}$/.test(s.daily))
   )
     throw Error('지원하지 않거나 손상된 기록');
   s.name ??= null;
   s.birthMode ??= 'explore';
+  s.daily ??= null;
   if (
     s.storyVersion === 2 &&
     (!s.story ||

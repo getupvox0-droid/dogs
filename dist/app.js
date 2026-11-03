@@ -32,6 +32,7 @@ import { TIME_CONFIG, clockState, clockDays, readingMs, readingGate } from './ti
 import { visualFor, diagramSvg, PHASE_NAMES } from './visuals.js';
 import { downloadLifeCard } from './share-card.js';
 import { josa } from './korean.js';
+import { createDailyLife, koreaDate } from './daily.js';
 import { KIND_NAMES, companionAlbum, longestCompanion } from './album.js';
 import { UK_REFERENCE } from './statistics.js';
 import { resolveChoice, playbackTick } from './playback.js';
@@ -576,9 +577,11 @@ function render() {
       ['먹이 여건', `${Math.round(w.resource)}/100 · 게임 설정`],
       [
         '출생 추첨',
-        life.birthMode === 'real'
-          ? '현실 비율 · 12개 나라의 개 수 추정치 (세계 전체 대표 아님)'
-          : '골고루 둘러보기 · 12개 나라와 출생 환경을 같은 확률로',
+        life.daily
+          ? `오늘의 강아지 (${life.daily}) · 그날 태어난 모두가 같은 시작 · 현실 비율`
+          : life.birthMode === 'real'
+            ? '현실 비율 · 12개 나라의 개 수 추정치 (세계 전체 대표 아님)'
+            : '골고루 둘러보기 · 12개 나라와 출생 환경을 같은 확률로',
       ],
       [
         '한 생의 길이',
@@ -624,7 +627,8 @@ function open() {
   $('game').hidden = false;
   switchTab('dashboard');
 }
-$('birth').onclick = () => {
+// Starts a new life from `make(profile)`; the current life is replaced only after confirming.
+function beginLife(make) {
   if (
     life?.alive &&
     !confirm('현재 삶 대신 새 삶을 시작할까요? 기록이 필요하면 먼저 내보내 주세요.')
@@ -637,22 +641,20 @@ $('birth').onclick = () => {
   recordResume = false;
   closeModal();
   const profile = saveProfile();
-  life = createLife(crypto.getRandomValues(new Uint32Array(1))[0], crypto.randomUUID(), {
-    birthMode: profile.birthMode,
-  });
+  life = make(profile);
   life.chronicle.preferences.lifeLength = profile.lifeLength;
-  setBirthDate(
-    life,
-    new Intl.DateTimeFormat('en-CA', {
-      timeZone: 'Asia/Seoul',
-      year: 'numeric',
-      month: '2-digit',
-      day: '2-digit',
-    }).format(new Date()),
-  );
   save();
   open();
-};
+}
+$('birth').onclick = () =>
+  beginLife((profile) => {
+    const s = createLife(crypto.getRandomValues(new Uint32Array(1))[0], crypto.randomUUID(), {
+      birthMode: profile.birthMode,
+    });
+    setBirthDate(s, koreaDate());
+    return s;
+  });
+$('birth-daily').onclick = () => beginLife(() => createDailyLife(koreaDate()));
 $('resume').onclick = () => {
   try {
     life = restore(localStorage.getItem(key));
@@ -735,7 +737,7 @@ function renderCollection() {
     for (const e of sum.recent) {
       const li = el(
         'li',
-        `${e.name ? e.name + ' · ' : ''}${e.breed} · ${e.countryName}의 ${e.birthPlace || homeShort[e.birthHome]}에서 태어나 ${age(e.ageDays)}`,
+        `${e.daily ? `오늘의 강아지 ${e.daily} · ` : ''}${e.name ? e.name + ' · ' : ''}${e.breed} · ${e.countryName}의 ${e.birthPlace || homeShort[e.birthHome]}에서 태어나 ${age(e.ageDays)}`,
       );
       if (e.companion)
         li.append(
@@ -1033,6 +1035,9 @@ function renderBirth() {
   const c = life.chronicle,
     b = c.birth;
   $('birth-date').textContent = `${dayDate(life, 0)} · 개 / ${life.breed}`;
+  $('birth-eyebrow').textContent = life.daily
+    ? `작은 발자국 · 오늘의 강아지 ${life.daily}`
+    : '작은 발자국 · 첫 장면';
   $('birth-place').textContent = birthWorld(life);
   $('birth-portrait').replaceChildren(visualNode(life, { id: 'birth', day: 0 }));
   $('birth-image-note').textContent =
@@ -1125,6 +1130,17 @@ function renderEnding() {
     ])
       facts.append(el('dt', k), el('dd', v));
     area.append(facts);
+    if (life.daily) {
+      const box = el('div', null, 'compare');
+      box.append(
+        el('h3', `오늘의 강아지 · ${life.daily}`),
+        el(
+          'p',
+          '이날 태어난 모두가 이 강아지와 같은 곳, 같은 모습으로 시작했습니다. 그 뒤의 삶은 각자의 선택에 따라 달라집니다.',
+        ),
+      );
+      area.append(box);
+    }
     const mine = loadProfile().myDog;
     if (mine.name || mine.age != null) {
       const who = mine.name || '우리 집 강아지',

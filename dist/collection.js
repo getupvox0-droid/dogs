@@ -99,6 +99,7 @@ export function lifeEntry(s) {
     ageDays: s.day,
     events: EVENT_IDS.filter((id) => s.log.some((e) => e.id === id)),
     birthDate: s.chronicle.birthDate,
+    daily: s.daily || null,
     companion: (({ name, kindName } = {}) => (name ? { name, kindName } : null))(
       longestCompanion(s) || undefined,
     ),
