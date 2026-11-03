@@ -85,7 +85,7 @@ function harness(s) {
     },
   };
 }
-test('choice result persists once, protects reading, then automatically resumes story playback', async () => {
+test('choice result persists once, waits for the reader, then resumes story playback', async () => {
   const s = createLife(7);
   while (s.alive && !s.pending) advance(s, 1);
   const h = harness(s);
@@ -107,6 +107,12 @@ test('choice result persists once, protects reading, then automatically resumes 
     h.tick(10000);
     assert.equal(h.stored().day, d);
     h.timeouts.at(-1).fn();
+    // The scene stays open until the reader presses on.
+    assert.equal(g('modal').hidden, false);
+    assert.equal(g('continue-story').disabled, false);
+    h.tick(10000);
+    assert.equal(h.stored().day, d);
+    g('continue-story').onclick();
     assert.equal(g('modal').hidden, true);
     h.tick(1600);
     g('save').onclick();
