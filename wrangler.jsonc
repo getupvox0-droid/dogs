@@ -11,14 +11,14 @@
     "run_worker_first": ["/api/*"]
   },
   "vars": {
-    // Turnstile site key (public). Replace with the key from the Turnstile dashboard.
-    "TURNSTILE_SITE_KEY": "REPLACE_WITH_TURNSTILE_SITE_KEY"
+    // Turnstile site key (public; the secret key is a Worker secret).
+    "TURNSTILE_SITE_KEY": "0x4AAAAAAFx_9ge9Ue-9fGuS"
   },
   "d1_databases": [
     {
       "binding": "DB",
       "database_name": "dogs-park",
-      "database_id": "REPLACE_WITH_D1_DATABASE_ID"
+      "database_id": "5cb9cd8e-c8b3-4107-bf41-3064a94b2369"
     }
   ]
 }
