@@ -82,10 +82,16 @@ test('no unexplained instant death in a sample of complete simulated lives', () 
       if (s.pending) choose(s, s.pending.options[0].id);
       else advance(s, 100);
     }
+    assert.ok(!s.cause.includes('사인은 모델링하지 않음'));
+    // A crossroad can end a life at once, but only right after the choice that risked it.
+    if (s.crossroads.history.at(-1)?.day === s.day && s.log.at(-2).id !== 'illness-onset') {
+      assert.equal(s.log.at(-1).id, 'death');
+      assert.ok(s.log.some((e) => e.id === 'crossroad-result' && e.day === s.day));
+      continue;
+    }
     const last = s.medical.history.at(-1);
     assert.equal(last.outcome, 'died');
     assert.ok(s.day - last.start >= 10);
-    assert.ok(!s.cause.includes('사인은 모델링하지 않음'));
   }
 });
 test('malformed health imports rejected, old completed lives retain original unknown cause', () => {

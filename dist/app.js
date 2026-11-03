@@ -415,6 +415,13 @@ function showModal(type, keyValue) {
       actions.append(b);
     }
     $('decision').append(actions);
+    // What only the player knows about this moment (crossroads); the dog's text never says it.
+    // It comes after the buttons in the markup and is moved above them with CSS order.
+    if (pending.know) {
+      const know = el('p', null, 'decision-know');
+      know.append(el('strong', '이 아이는 모르는 것'), el('span', pending.know));
+      $('decision').append(know);
+    }
   } else {
     const p = life.presentation || life.chronicle.reading;
     running = false;

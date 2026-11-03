@@ -5,6 +5,13 @@ import {
   validOpportunity,
   validateOpportunities,
 } from './opportunities.js';
+import {
+  initCrossroads,
+  crossroadStep,
+  crossroadChoice,
+  validCrossroad,
+  validateCrossroads,
+} from './crossroads.js';
 import { initThreads, threadStep, threadChoice, validThread, validateThreads } from './threads.js';
 import { dailyBehavior, learnAction } from './behavior.js';
 import {
@@ -246,6 +253,7 @@ export function createLife(seed = Date.now(), lifeId = null, options = {}) {
   validateNeighbors(s);
   validateThreads(s);
   validateOpportunities(s);
+  validateCrossroads(s);
   initHealth(s);
   initStories(s);
   validateAppearance(s);
@@ -259,6 +267,7 @@ export function createLife(seed = Date.now(), lifeId = null, options = {}) {
   initNeighbors(s);
   initThreads(s);
   initOpportunities(s);
+  initCrossroads(s);
   decisionUid(s);
   initChronicle(s, true);
   return s;
@@ -293,6 +302,7 @@ export function choose(s, id, expectedUid = null, { auto = false } = {}) {
   s.pending = null;
   log(s, 'choice', p.options.find((o) => o.id === id).text);
   opportunityChoice(s, p, id, { log, remember });
+  crossroadChoice(s, p, id, { log, remember });
   threadChoice(s, p, id, { log, remember });
   familyChoice(s, p, id, { log, remember });
   clinicalChoice(s, p, id, { log });
@@ -357,6 +367,9 @@ export function choose(s, id, expectedUid = null, { auto = false } = {}) {
   s.log.at(-1).prompt = p.text;
   s.log.at(-1).action = p.options.find((o) => o.id === id).text;
   for (let i = before.logLength; i < s.log.length - 1; i++) s.log[i].resolvedDecisionUid = uid;
+  // A choice that ends the life (a crossroad) still keeps death as the last record.
+  const died = s.log.findIndex((e, i) => i >= before.logLength && e.id === 'death');
+  if (died >= 0 && died < s.log.length - 1) s.log.push(...s.log.splice(died, 1));
   return true;
 }
 function decision(s, id, text, options) {
@@ -573,8 +586,16 @@ function step(s) {
     log(s, 'birthday', `${Math.floor(s.day / 365)}번째 해. 익숙한 냄새와 기억이 쌓였다.`);
     if (s.day >= 2920) log(s, 'aging', '쉬었다 가는 시간이 길어졌다. 편한 자리를 먼저 찾는다.');
   }
+  // Crossroads come before routine situations: they are rarer and can change the rest of a life.
+  const crossroadBusy =
+    !threadBusy && !storyBusy && !richBusy && !s.pending && crossroadStep(s, { decision });
   const opportunityBusy =
-    !threadBusy && !storyBusy && !richBusy && !s.pending && opportunityStep(s, { log, decision });
+    !crossroadBusy &&
+    !threadBusy &&
+    !storyBusy &&
+    !richBusy &&
+    !s.pending &&
+    opportunityStep(s, { log, decision });
   const cal = s.worldModel.calendar;
   if (
     !opportunityBusy &&
@@ -683,6 +704,7 @@ export function restore(raw) {
           'care-change',
         ].includes(s.pending.id) ||
           validOpportunity(s.pending.id) ||
+          validCrossroad(s.pending.id) ||
           validThread(s.pending.id) ||
           validLifeDecision(s.pending.id) ||
           validFamilyDecision(s.pending.id)) &&
@@ -727,6 +749,7 @@ export function restore(raw) {
   validateNeighbors(s);
   validateThreads(s);
   validateOpportunities(s);
+  validateCrossroads(s);
   initHealth(s);
   initStories(s);
   validateAppearance(s);

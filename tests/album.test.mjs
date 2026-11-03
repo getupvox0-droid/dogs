@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { createLife, advance, serialize, restore } from '../dist/engine.js';
+import { createLife, advance, choose, serialize, restore } from '../dist/engine.js';
 import { companionAlbum, longestCompanion, firstMet, KIND_NAMES } from '../dist/album.js';
 import { syncRelations } from '../dist/life-state.js';
 import { lifeEntry, parseCollection, addLife, emptyCollection } from '../dist/collection.js';
@@ -27,7 +27,10 @@ test('first contact days are recorded from birth', () => {
 
 test('saves from before first contact tracking keep earlier first days unknown', () => {
   const s = createLife(4);
-  advance(s, 400);
+  while (s.alive && s.day < 400) {
+    if (s.pending) choose(s, s.pending.options.at(-1).id);
+    else advance(s, 1);
+  }
   delete s.relationDatesFrom;
   for (const r of s.relations) delete r.firstContact;
   const back = restore(serialize(s));
