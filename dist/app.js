@@ -554,8 +554,8 @@ function render() {
       [
         '출생 추첨',
         life.birthMode === 'real'
-          ? '현실 비율 · 6개 나라의 개 수 추정치 (세계 전체 대표 아님)'
-          : '골고루 둘러보기 · 6개 나라와 출생 환경을 같은 확률로',
+          ? '현실 비율 · 12개 나라의 개 수 추정치 (세계 전체 대표 아님)'
+          : '골고루 둘러보기 · 12개 나라와 출생 환경을 같은 확률로',
       ],
     ])
       $('world-facts').append(el('dt', k), el('dd', v));
@@ -923,12 +923,13 @@ function renderBirth() {
   if (document.activeElement !== $('dog-name')) $('dog-name').value = life.name || '';
   const facts = countryFacts(life.country.id),
     world = [
+      ...(facts.total ? [`이 나라의 개 전체 · ${facts.total}`] : []),
       `이 나라의 반려견 · ${facts.owned}`,
       `이 나라에서 길·마을에 사는 개 · ${facts.freeRoaming}`,
     ];
   if (life.birthMode === 'real')
     world.push(
-      `이번 삶은 현실 비율로 뽑혔습니다. 6개 나라 중 이 나라 ${pct(countryShares(COUNTRIES)[life.country.id])} · 그 안에서 이 출생 환경 ${pct(homeShares(life.country.id)[b.home])}`,
+      `이번 삶은 현실 비율로 뽑혔습니다. ${COUNTRIES.length}개 나라 중 이 나라 ${pct(countryShares(COUNTRIES)[life.country.id])} · 그 안에서 이 출생 환경 ${pct(homeShares(life.country.id)[b.home])}`,
     );
   if (facts.sources.length) world.push(`출처 · ${facts.sources.join(' · ')}`);
   $('birth-world').replaceChildren(...world.map((t) => el('p', t)));

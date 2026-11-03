@@ -54,7 +54,14 @@ export const COUNTRIES = [
   { id: 'US', name: '미국', place: '교외 마을', climate: 'temperate', weight: 1 },
   { id: 'TR', name: '튀르키예', place: '도시 골목', climate: 'temperate', weight: 1 },
   { id: 'CA', name: '캐나다', place: '작은 마을', climate: 'cold', weight: 1 },
+  { id: 'BR', name: '브라질', place: '언덕 동네', climate: 'hot', weight: 1 },
+  { id: 'MX', name: '멕시코', place: '고원 도시 주택가', climate: 'temperate', weight: 1 },
+  { id: 'CN', name: '중국', place: '도시 아파트 단지', climate: 'temperate', weight: 1 },
+  { id: 'PH', name: '필리핀', place: '바랑가이 골목', climate: 'hot', weight: 1 },
+  { id: 'NG', name: '나이지리아', place: '도시 외곽 마을', climate: 'hot', weight: 1 },
+  { id: 'TH', name: '태국', place: '사원 근처 동네', climate: 'hot', weight: 1 },
 ];
+// Every breed here needs an illustration family in visuals.js BREED_IMAGES.
 const BREEDS = {
   KR: ['지역 믹스', '진돗개 믹스', '푸들'],
   JP: ['지역 믹스', '시바 믹스', '푸들'],
@@ -62,6 +69,12 @@ const BREEDS = {
   US: ['지역 믹스', '래브라도 믹스', '테리어 믹스'],
   TR: ['지역 믹스', '셰퍼드 믹스', '소형 믹스'],
   CA: ['지역 믹스', '허스키 믹스', '래브라도 믹스'],
+  BR: ['지역 믹스', '소형 믹스', '래브라도 믹스'],
+  MX: ['지역 믹스', '소형 믹스', '셰퍼드 믹스'],
+  CN: ['지역 믹스', '소형 믹스', '푸들'],
+  PH: ['지역 믹스', '소형 믹스', '래브라도 믹스'],
+  NG: ['지역 믹스', '셰퍼드 믹스', '소형 믹스'],
+  TH: ['지역 믹스', '소형 믹스', '테리어 믹스'],
 };
 export function random(s) {
   let t = (s.rng += 0x6d2b79f5);
