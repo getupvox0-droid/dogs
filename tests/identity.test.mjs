@@ -1,7 +1,8 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { createLife, serialize, restore, setName, cleanName, COUNTRIES } from '../dist/engine.js';
-import { birthStory } from '../dist/chronicle.js';
+import { birthStory, birthWorld } from '../dist/chronicle.js';
+import { SETTINGS } from '../dist/backgrounds.js';
 import {
   COUNTRY_DOGS,
   countryShares,
@@ -102,7 +103,13 @@ test('the newborn senses its world without place names or judgement', () => {
     const s = createLife(seed),
       text = birthStory(s);
     assert.ok(text.length > 20);
-    for (const word of [s.country.name, s.country.place, s.chronicle.birth.place, '불쌍', '운이'])
+    for (const word of [
+      s.country.name,
+      s.chronicle.birth.region,
+      s.chronicle.birth.place,
+      '불쌍',
+      '운이',
+    ].filter(Boolean))
       assert.ok(!text.includes(word), `${seed}: ${word}`);
   }
 });
@@ -129,4 +136,22 @@ test('country facts only quote sourced numbers', () => {
   assert.equal(countryFacts('KR').freeRoaming, '공식 추정치 없음');
   assert.match(countryFacts('US').owned, /^약 8,730만 마리$/);
   assert.ok(countryFacts('IN').sources.some((x) => x.includes('2019')));
+});
+
+test('the region shown at birth always matches the kind of birth place', () => {
+  const spaces = new Set(SETTINGS.map((x) => x.space));
+  for (const c of COUNTRIES) {
+    assert.equal(c.place, undefined, c.id);
+    for (const k of Object.keys(c.areas)) assert.ok(spaces.has(k), `${c.id}.${k}`);
+  }
+  let withRegion = 0;
+  for (let seed = 0; seed < 600; seed++) {
+    const s = createLife(seed),
+      b = s.chronicle.birth;
+    assert.equal(b.region, s.country.areas[s.worldModel.origin.space] ?? null);
+    assert.equal(birthWorld(s), [b.country, b.region, b.place].filter(Boolean).join(' · '));
+    assert.ok(!birthWorld(s).includes('undefined'));
+    if (b.region) withRegion++;
+  }
+  assert.ok(withRegion > 100 && withRegion < 500);
 });
