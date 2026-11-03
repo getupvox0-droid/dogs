@@ -91,23 +91,45 @@ function loadTurnstile() {
   });
   return turnstileLoad;
 }
-// One fresh token per write. The widget only shows itself if Cloudflare needs the person to act.
+// What a Turnstile error code means for the person in front of it (Cloudflare's code families).
+export function turnstileMessage(code = '') {
+  const c = String(code);
+  const why = /^1102/.test(c)
+    ? '이 사이트 주소가 사람 확인 설정에 등록되어 있지 않습니다. 운영자가 Turnstile의 Hostnames를 확인해야 합니다.'
+    : /^1101/.test(c)
+      ? '사람 확인 설정의 사이트 키가 맞지 않습니다. 운영자 확인이 필요합니다.'
+      : /^1105/.test(c)
+        ? '이 브라우저는 사람 확인을 지원하지 않습니다. 다른 브라우저에서 시도해 주세요.'
+        : /^6000/.test(c)
+          ? '브라우저 확인에 실패했습니다. 광고 차단·개인정보 보호 확장 프로그램을 잠시 끄거나, 다른 브라우저에서 시도해 주세요.'
+          : /^(timeout|expired)$/.test(c)
+            ? '확인 시간이 지났습니다. 다시 눌러 주세요.'
+            : '사람 확인을 마치지 못했습니다. 잠시 뒤 다시 시도해 주세요.';
+  return c ? `${why} (오류 ${c})` : why;
+}
+// One fresh token per write. The widget only shows itself if Cloudflare needs the person to act;
+// an interactive check stays on screen until the person finishes it or it times out.
 async function humanToken(box) {
   const { siteKey, open } = await parkConfig();
   if (!open || !siteKey) throw Error('공원에 남기는 기능이 아직 준비되지 않았습니다.');
   const ts = await loadTurnstile();
   return new Promise((resolve, reject) => {
-    const id = ts.render(box, {
+    let id = null;
+    const done = (fn, value) => {
+      setTimeout(() => id != null && ts.remove(id), 0);
+      fn(value);
+    };
+    id = ts.render(box, {
       sitekey: siteKey,
       appearance: 'interaction-only',
-      callback: (token) => {
-        resolve(token);
-        setTimeout(() => ts.remove(id), 0);
+      callback: (token) => done(resolve, token),
+      'error-callback': (code) => {
+        done(reject, Error(turnstileMessage(code)));
+        return true;
       },
-      'error-callback': () => {
-        ts.remove(id);
-        reject(Error('사람 확인을 마치지 못했습니다. 잠시 뒤 다시 시도해 주세요.'));
-      },
+      'timeout-callback': () => done(reject, Error(turnstileMessage('timeout'))),
+      'expired-callback': () => done(reject, Error(turnstileMessage('expired'))),
+      'unsupported-callback': () => done(reject, Error(turnstileMessage('110500'))),
     });
   });
 }
