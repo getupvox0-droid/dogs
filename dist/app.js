@@ -53,6 +53,9 @@ import {
   lightCandle,
   reportMemorial,
   removeMemorial,
+  parkConfig,
+  shrinkPhoto,
+  uploadPhoto,
 } from './park-client.js';
 import { PARK_LIMITS } from './park.js';
 import { KIND_NAMES, companionAlbum, longestCompanion } from './album.js';
@@ -1103,6 +1106,15 @@ function parkCard(m, preview = false) {
     if (m.companion) li.append(el('small', `가장 오래 곁에 있던 존재 · ${m.companion}`));
     li.append(el('p', m.lastLine, 'park-last'));
   }
+  if (m.photo === 'shown') {
+    const img = el('img', null, 'park-photo-img');
+    img.src = `/api/photos/${m.id}`;
+    img.alt = `${m.name}의 사진`;
+    img.loading = 'lazy';
+    img.decoding = 'async';
+    li.insertBefore(img, li.children[1]);
+  } else if (m.photo === 'pending')
+    li.append(el('small', '사진은 운영자가 확인한 뒤 보입니다.', 'muted'));
   if (m.message) li.append(el('blockquote', m.message, 'park-message'));
   if (preview) return li;
   const foot = el('div', null, 'park-foot');
@@ -1238,6 +1250,12 @@ function parkForm(kind) {
   if (fromLife) $('park-preview').append(parkCard(park.draft.body, true));
   for (const id of ['park-message', 'park-name', 'park-breed', 'park-born', 'park-departed'])
     $(id).value = '';
+  clearPhoto();
+  $('park-photo-row').hidden = true;
+  if (!fromLife)
+    parkConfig()
+      .then((c) => ($('park-photo-row').hidden = !c.photos))
+      .catch(() => {});
   $('park-message').maxLength = max;
   const farewell = fromLife && notesOf(life).find((n) => n.key === FAREWELL.key);
   if (farewell) $('park-message').value = [...farewell.text].slice(0, max).join('');
@@ -1283,6 +1301,27 @@ $('park-cancel').onclick = () => {
   $('park-form').hidden = true;
   park.draft = null;
 };
+// The photo for a real dog's memorial, already shrunk and stripped (park-client.js shrinkPhoto).
+let parkPhoto = null;
+function clearPhoto() {
+  parkPhoto = null;
+  $('park-photo').value = '';
+  if ($('park-photo-preview').src) URL.revokeObjectURL($('park-photo-preview').src);
+  $('park-photo-preview').removeAttribute('src');
+  $('park-photo-preview').hidden = true;
+}
+$('park-photo').onchange = async () => {
+  const file = $('park-photo').files[0];
+  clearPhoto();
+  if (!file) return;
+  try {
+    parkPhoto = await shrinkPhoto(file);
+    $('park-photo-preview').src = URL.createObjectURL(parkPhoto);
+    $('park-photo-preview').hidden = false;
+  } catch (e) {
+    parkStatus(e.message);
+  }
+};
 $('park-message').oninput = () => {
   $('park-count').textContent =
     `${[...$('park-message').value].length} / ${PARK_LIMITS.message[park.draft?.body.kind || 'real']}`;
@@ -1307,16 +1346,26 @@ $('park-form').onsubmit = async (event) => {
             message: $('park-message').value,
           }
         : { ...d.body, message: $('park-message').value };
+  let photoNote = null;
   const left = await parkAction(async () => {
-    await leaveMemorial(body, $('park-turnstile'), d.leftKey);
+    const m = await leaveMemorial(body, $('park-turnstile'), d.leftKey);
     $('park-form').hidden = true;
     park.draft = null;
+    // The memorial is kept even if the photo does not go through; it can be left again later.
+    if (kind === 'real' && parkPhoto)
+      try {
+        await uploadPhoto(m.id, parkPhoto, $('park-turnstile'));
+        photoNote = '사진은 운영자가 확인한 뒤 보입니다.';
+      } catch (e) {
+        photoNote = `기록은 남겼지만 사진은 올리지 못했습니다. ${e.message}`;
+      }
+    clearPhoto();
   });
   if (!left) return;
   // A shared daily dog opens on its day, next to the others born the same day.
   const order = kind === 'shared' && body.daily ? body.daily : 'recent';
   if (park.space === 'lives') await loadDays();
-  if (await loadPark(order)) parkStatus(FORMS[kind][2]);
+  if (await loadPark(order)) parkStatus([FORMS[kind][2], photoNote].filter(Boolean).join(' '));
 };
 // Leaving from the ending: only lives played on this device, never one opened from a link.
 function leaveFromEnding(space, kind, again) {

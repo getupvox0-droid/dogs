@@ -103,7 +103,11 @@ test('memorial bodies are checked per kind', () => {
 
 test('leaving, listing, candles and deleting', async () => {
   const e = env();
-  assert.deepEqual((await call(e, 'GET', '/api/config')).body, { open: true, siteKey: 'site' });
+  assert.deepEqual((await call(e, 'GET', '/api/config')).body, {
+    open: true,
+    siteKey: 'site',
+    photos: false,
+  });
   const made = await call(e, 'POST', '/api/memorials', { body: gameLife, now: 1000 });
   assert.equal(made.status, 201);
   const id = made.body.memorial.id;
@@ -294,4 +298,123 @@ test('person-check errors say what went wrong and keep the code', async () => {
   assert.match(turnstileMessage('600010'), /브라우저 확인에 실패/);
   assert.match(turnstileMessage('timeout'), /시간이 지났습니다/);
   assert.match(turnstileMessage('300030'), /잠시 뒤 다시/);
+});
+
+// R2 in memory: the part of the bucket API the park uses.
+function fakeR2() {
+  const files = new Map();
+  return {
+    files,
+    put: async (key, bytes, opts) =>
+      void files.set(key, { bytes, type: opts?.httpMetadata?.contentType }),
+    get: async (key) => (files.has(key) ? { body: files.get(key).bytes } : null),
+    delete: async (key) => void files.delete(key),
+  };
+}
+const JPEG = new Uint8Array([0xff, 0xd8, 0xff, 0xe0, 0, 16, 74, 70, 73, 70, 0, 1, 1, 0]);
+async function upload(
+  e,
+  id,
+  { device = A, token = 'ok', type = 'image/jpeg', bytes = JPEG, now } = {},
+) {
+  const headers = { 'content-type': type, 'x-turnstile': token };
+  if (device) headers['x-park-device'] = device;
+  const r = await handlePark(
+    new Request(`https://dogs.test/api/memorials/${id}/photo`, {
+      method: 'POST',
+      headers,
+      body: bytes,
+    }),
+    e,
+    now,
+  );
+  return {
+    status: r.status,
+    body: r.headers.get('content-type')?.startsWith('application/json') ? await r.json() : null,
+  };
+}
+const realDog = {
+  kind: 'real',
+  name: '콩이',
+  breed: '말티즈',
+  born: 2009,
+  departed: 2024,
+  message: '고마워',
+};
+
+test('a photo of a real dog waits for the keeper, then shows; others never see a pending one', async () => {
+  const e = { ...env(), PHOTOS: fakeR2() };
+  assert.equal((await call(e, 'GET', '/api/config')).body.photos, true);
+  const { body } = await call(e, 'POST', '/api/memorials', { body: realDog });
+  const id = body.memorial.id;
+  assert.equal(body.memorial.photo, null);
+  assert.equal((await upload(e, id, { device: B })).status, 403);
+  assert.equal((await upload(e, id, { type: 'image/png' })).status, 415);
+  assert.equal((await upload(e, id, { bytes: new Uint8Array(20) })).status, 415);
+  assert.equal((await upload(e, id, { token: 'bad' })).status, 403);
+  assert.equal((await upload(e, id, { bytes: new Uint8Array(600001).fill(0xff) })).status, 413);
+  assert.equal((await upload(e, id)).status, 201);
+  assert.equal(e.PHOTOS.files.size, 1);
+  const seen = async (device) =>
+    (await call(e, 'GET', '/api/memorials?order=recent', { device })).body.memorials[0].photo;
+  assert.equal(await seen(A), 'pending');
+  assert.equal(await seen(B), null);
+  const get = (path, auth) =>
+    handlePark(
+      new Request('https://dogs.test' + path, { headers: auth ? { authorization: auth } : {} }),
+      e,
+    );
+  assert.equal((await get(`/api/photos/${id}`)).status, 404);
+  assert.equal((await get('/api/admin/photos')).status, 404);
+  const pending = await (await get('/api/admin/photos', 'Bearer admin-token')).json();
+  assert.equal(pending.memorials.length, 1);
+  assert.equal((await get(`/api/admin/photos/${id}`, 'Bearer admin-token')).status, 200);
+  await call(e, 'POST', `/api/admin/photos/${id}`, {
+    body: { action: 'approve' },
+    auth: 'Bearer admin-token',
+  });
+  assert.equal(await seen(B), 'shown');
+  const shown = await get(`/api/photos/${id}`);
+  assert.equal(shown.status, 200);
+  assert.equal(shown.headers.get('content-type'), 'image/jpeg');
+  assert.equal(shown.headers.get('x-content-type-options'), 'nosniff');
+  // A memorial hidden by reports hides its photo too.
+  for (const d of [B, 'c'.repeat(32), 'd'.repeat(32)])
+    await call(e, 'POST', `/api/memorials/${id}/report`, { device: d });
+  assert.equal((await get(`/api/photos/${id}`)).status, 404);
+  await call(e, 'POST', `/api/admin/memorials/${id}`, {
+    body: { action: 'delete' },
+    auth: 'Bearer admin-token',
+  });
+  assert.equal(e.PHOTOS.files.size, 0);
+});
+
+test('photos only for real dogs, one each, a few a day, and rejecting removes the file', async () => {
+  const e = { ...env(), PHOTOS: fakeR2() };
+  const day0 = 1e12,
+    day1 = day0 + 86400001,
+    make = async (body, now) =>
+      (await call(e, 'POST', '/api/memorials', { body, now })).body.memorial.id;
+  const game = await make(gameLife, day0);
+  assert.equal((await upload(e, game, { now: day1 })).status, 400);
+  const ids = [
+    await make(realDog, day0),
+    await make(realDog, day0),
+    await make(realDog, day1),
+    await make(realDog, day1),
+  ];
+  for (const id of ids.slice(0, 3)) assert.equal((await upload(e, id, { now: day1 })).status, 201);
+  assert.equal((await upload(e, ids[0], { now: day1 })).status, 409);
+  assert.equal((await upload(e, ids[3], { now: day1 })).status, 429);
+  await call(e, 'POST', `/api/admin/photos/${ids[0]}`, {
+    body: { action: 'reject' },
+    auth: 'Bearer admin-token',
+  });
+  assert.equal(e.PHOTOS.files.has(`photos/${ids[0]}`), false);
+  const list = (await call(e, 'GET', '/api/memorials?order=recent')).body.memorials;
+  assert.equal(list.find((m) => m.id === ids[0]).photo, null);
+  // Without a bucket the park still works and refuses photos plainly.
+  const plain = env();
+  const id = (await call(plain, 'POST', '/api/memorials', { body: realDog })).body.memorial.id;
+  assert.equal((await upload(plain, id)).status, 503);
 });

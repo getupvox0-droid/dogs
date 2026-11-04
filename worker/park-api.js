@@ -1,6 +1,6 @@
 // Rainbow Bridge Park API on D1. Every write needs a Turnstile token and a device id from the page;
 // the device id is only stored as a salted hash, and no IP address is kept.
-import { PARK_LIMITS, SPACE_KINDS, validateMemorial } from '../dist/park.js';
+import { PARK_LIMITS, PHOTO_TYPES, SPACE_KINDS, validateMemorial } from '../dist/park.js';
 
 const SCHEMA = [
   `CREATE TABLE IF NOT EXISTS memorials (
@@ -13,7 +13,12 @@ const SCHEMA = [
     created_at INTEGER NOT NULL, PRIMARY KEY (memorial_id, device_hash))`,
   `CREATE TABLE IF NOT EXISTS reports (memorial_id TEXT NOT NULL, device_hash TEXT NOT NULL,
     reason TEXT, created_at INTEGER NOT NULL, PRIMARY KEY (memorial_id, device_hash))`,
+  // A photo waits as 'pending' until the park keeper shows it; the file itself lives in R2.
+  `CREATE TABLE IF NOT EXISTS photos (memorial_id TEXT PRIMARY KEY, status TEXT NOT NULL,
+    type TEXT NOT NULL, bytes INTEGER NOT NULL, device_hash TEXT NOT NULL, created_at INTEGER NOT NULL)`,
+  `CREATE INDEX IF NOT EXISTS photos_status ON photos (status, created_at)`,
 ];
+const photoKey = (id) => `photos/${id}`;
 const DAY = 86400000;
 const schemaReady = new WeakMap();
 
@@ -64,7 +69,9 @@ function newId() {
   const b = crypto.getRandomValues(new Uint8Array(9));
   return [...b].map((x) => x.toString(16).padStart(2, '0')).join('');
 }
-function card(row, device, lit) {
+// photo: 'shown' for everyone once approved; the device that left it also sees 'pending'.
+function card(row, device, lit, photo = null) {
+  const mine = device != null && row.device_hash === device;
   return {
     id: row.id,
     kind: row.kind,
@@ -72,21 +79,45 @@ function card(row, device, lit) {
     message: row.message,
     candles: row.candles,
     lit: Boolean(lit),
-    mine: device != null && row.device_hash === device,
+    mine,
+    photo: photo === 'shown' || (mine && photo) ? photo : null,
     ...JSON.parse(row.data),
   };
 }
 async function withCandles(db, rows, device) {
-  if (!device || !rows.length) return rows.map((r) => card(r, device, false));
+  if (!rows.length) return [];
   const marks = rows.map(() => '?').join(','),
-    { results } = await db
+    ids = rows.map((r) => r.id),
+    photos = new Map(
+      (
+        await db
+          .prepare(`SELECT memorial_id, status FROM photos WHERE memorial_id IN (${marks})`)
+          .bind(...ids)
+          .all()
+      ).results.map((p) => [p.memorial_id, p.status]),
+    );
+  if (!device) return rows.map((r) => card(r, device, false, photos.get(r.id)));
+  const { results } = await db
       .prepare(
         `SELECT memorial_id FROM candles WHERE device_hash = ? AND memorial_id IN (${marks})`,
       )
-      .bind(device, ...rows.map((r) => r.id))
+      .bind(device, ...ids)
       .all(),
     lit = new Set(results.map((r) => r.memorial_id));
-  return rows.map((r) => card(r, device, lit.has(r.id)));
+  return rows.map((r) => card(r, device, lit.has(r.id), photos.get(r.id)));
+}
+// A photo file from R2 with headers that keep a browser from treating it as anything but an image.
+async function photoResponse(env, row, cache) {
+  const obj = await env.PHOTOS.get(photoKey(row.memorial_id));
+  if (!obj) return fail(404, '사진이 없습니다.');
+  return new Response(obj.body, {
+    headers: {
+      'content-type': row.type,
+      'cache-control': cache,
+      'x-content-type-options': 'nosniff',
+      'content-security-policy': "default-src 'none'",
+    },
+  });
 }
 async function readBody(req) {
   if (Number(req.headers.get('content-length') || 0) > 8192) return null;
@@ -112,7 +143,11 @@ export async function handlePark(req, env, now = Date.now()) {
     method = req.method;
   const writable = Boolean(env.DB && env.TURNSTILE_SECRET && env.DEVICE_SALT);
   if (path === '/api/config' && method === 'GET')
-    return json({ open: writable, siteKey: writable ? env.TURNSTILE_SITE_KEY || null : null });
+    return json({
+      open: writable,
+      siteKey: writable ? env.TURNSTILE_SITE_KEY || null : null,
+      photos: writable && Boolean(env.PHOTOS),
+    });
   if (!env.DB) return fail(503, '공원이 아직 준비되지 않았습니다.');
   const db = env.DB;
   await ensureSchema(db);
@@ -146,6 +181,19 @@ export async function handlePark(req, env, now = Date.now()) {
         : await page(db, `kind = 'shared'`, [], url, device),
     );
   }
+  // An approved photo of a memorial that is still shown.
+  const photo = /^\/api\/photos\/([0-9a-f]{18})$/.exec(path);
+  if (photo && method === 'GET') {
+    if (!env.PHOTOS) return fail(404, '사진이 없습니다.');
+    const row = await db
+      .prepare(
+        `SELECT p.* FROM photos p JOIN memorials m ON m.id = p.memorial_id
+         WHERE p.memorial_id = ? AND p.status = 'shown' AND m.status = 'shown'`,
+      )
+      .bind(photo[1])
+      .first();
+    return row ? photoResponse(env, row, 'public, max-age=86400') : fail(404, '사진이 없습니다.');
+  }
   // Days whose daily dog has shared lives, newest day first (not by how many).
   if (path === '/api/lives/days' && method === 'GET') {
     const { results } = await db
@@ -170,6 +218,34 @@ export async function handlePark(req, env, now = Date.now()) {
         memorials: results.map((r) => ({ ...card(r, null, false), reports: r.reports })),
       });
     }
+    // Photos waiting for a look, oldest first, with the memorial they belong to.
+    if (path === '/api/admin/photos' && method === 'GET') {
+      const { results } = await db
+        .prepare(
+          `SELECT m.*, p.status AS photo_status FROM photos p JOIN memorials m ON m.id = p.memorial_id
+           WHERE p.status = 'pending' ORDER BY p.created_at LIMIT 100`,
+        )
+        .all();
+      return json({ memorials: results.map((r) => card(r, null, false, 'shown')) });
+    }
+    const ph = /^\/api\/admin\/photos\/([0-9a-f]{18})$/.exec(path);
+    if (ph && env.PHOTOS) {
+      const row = await db
+        .prepare(`SELECT * FROM photos WHERE memorial_id = ?`)
+        .bind(ph[1])
+        .first();
+      if (!row) return fail(404, '사진이 없습니다.');
+      if (method === 'GET') return photoResponse(env, row, 'no-store');
+      const body = await readBody(req);
+      if (body?.action === 'approve')
+        await db
+          .prepare(`UPDATE photos SET status = 'shown' WHERE memorial_id = ?`)
+          .bind(ph[1])
+          .run();
+      else if (body?.action === 'reject') await removePhoto(db, env, ph[1]);
+      else return fail(400, '할 일을 고르세요.');
+      return json({ ok: true });
+    }
     const m = /^\/api\/admin\/memorials\/([0-9a-f]{18})$/.exec(path);
     if (m && method === 'POST') {
       const body = await readBody(req);
@@ -178,14 +254,14 @@ export async function handlePark(req, env, now = Date.now()) {
           .prepare(`UPDATE memorials SET status = 'shown', reports = 0 WHERE id = ?`)
           .bind(m[1])
           .run();
-      else if (body?.action === 'delete') await removeMemorial(db, m[1]);
+      else if (body?.action === 'delete') await removeMemorial(db, m[1], env);
       else return fail(400, '할 일을 고르세요.');
       return json({ ok: true });
     }
     return fail(404, '없는 주소입니다.');
   }
 
-  const m = /^\/api\/memorials(?:\/([0-9a-f]{18})(?:\/(candle|report))?)?$/.exec(path);
+  const m = /^\/api\/memorials(?:\/([0-9a-f]{18})(?:\/(candle|report|photo))?)?$/.exec(path);
   if (!m || method === 'GET') return fail(404, '없는 주소입니다.');
   if (!writable) return fail(503, '공원에 남기는 기능이 아직 준비되지 않았습니다.');
   if (!device) return fail(400, '기기 정보를 확인하지 못했습니다. 새로고침 후 다시 시도해 주세요.');
@@ -229,8 +305,46 @@ export async function handlePark(req, env, now = Date.now()) {
 
   if (!action && method === 'DELETE') {
     if (row.device_hash !== device) return fail(403, '남긴 기기에서만 지울 수 있습니다.');
-    await removeMemorial(db, id);
+    await removeMemorial(db, id, env);
     return json({ ok: true });
+  }
+  // A photo for a real dog's memorial, sent as the image itself; the Turnstile token comes in a
+  // header because the body is not JSON. It waits for the park keeper before anyone sees it.
+  if (action === 'photo' && method === 'POST') {
+    if (!env.PHOTOS) return fail(503, '사진을 받는 기능이 아직 준비되지 않았습니다.');
+    if (row.device_hash !== device) return fail(403, '남긴 기기에서만 사진을 올릴 수 있습니다.');
+    if (row.kind !== 'real') return fail(400, '사진은 함께 살았던 반려견에게만 올릴 수 있습니다.');
+    const type = (req.headers.get('content-type') || '').split(';')[0].trim();
+    if (!PHOTO_TYPES[type]) return fail(415, 'JPEG나 WebP 사진만 올릴 수 있습니다.');
+    if (Number(req.headers.get('content-length') || 0) > PARK_LIMITS.photoBytes)
+      return fail(413, '사진이 너무 큽니다.');
+    if (!(await human(req.headers.get('x-turnstile'), env)))
+      return fail(403, '사람 확인을 통과하지 못했습니다.');
+    const bytes = new Uint8Array(await req.arrayBuffer());
+    if (bytes.length > PARK_LIMITS.photoBytes) return fail(413, '사진이 너무 큽니다.');
+    if (bytes.length < 12 || !PHOTO_TYPES[type](bytes))
+      return fail(415, '사진 파일을 읽지 못했습니다.');
+    // One photo per memorial: a rejected one is removed, so the owner can then try another.
+    if (await db.prepare(`SELECT 1 FROM photos WHERE memorial_id = ?`).bind(id).first())
+      return fail(409, '이미 사진이 있습니다.');
+    const recent = await db
+      .prepare(`SELECT COUNT(*) AS n FROM photos WHERE device_hash = ? AND created_at > ?`)
+      .bind(device, now - DAY)
+      .first();
+    if (recent.n >= PARK_LIMITS.dailyPhotos)
+      return fail(
+        429,
+        `한 기기에서 하루에 사진 ${PARK_LIMITS.dailyPhotos}장까지 올릴 수 있습니다.`,
+      );
+    await env.PHOTOS.put(photoKey(id), bytes, { httpMetadata: { contentType: type } });
+    await db
+      .prepare(
+        `INSERT INTO photos (memorial_id, status, type, bytes, device_hash, created_at)
+         VALUES (?, 'pending', ?, ?, ?, ?)`,
+      )
+      .bind(id, type, bytes.length, device, now)
+      .run();
+    return json({ photo: 'pending' }, 201);
   }
   if (method !== 'POST' || !action) return fail(404, '없는 주소입니다.');
   const body = (await readBody(req)) || {};
@@ -284,7 +398,12 @@ async function page(db, where, binds, url, device) {
     next: results.length > size ? `${last.created_at}_${last.id}` : null,
   };
 }
-async function removeMemorial(db, id) {
+async function removePhoto(db, env, id) {
+  await env.PHOTOS?.delete(photoKey(id));
+  await db.prepare(`DELETE FROM photos WHERE memorial_id = ?`).bind(id).run();
+}
+async function removeMemorial(db, id, env = {}) {
+  await removePhoto(db, env, id);
   await db.batch([
     db.prepare(`DELETE FROM candles WHERE memorial_id = ?`).bind(id),
     db.prepare(`DELETE FROM reports WHERE memorial_id = ?`).bind(id),

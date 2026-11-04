@@ -4,7 +4,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <meta name="robots" content="noindex" />
-    <title>공원 숨긴 글</title>
+    <title>공원 관리</title>
     <link rel="stylesheet" href="dashboard.css" />
     <style>
       main {
@@ -16,15 +16,18 @@
   </head>
   <body>
     <main>
-      <h1>무지개다리 공원 · 숨겨진 기록</h1>
+      <h1>무지개다리 공원 · 관리</h1>
       <p class="muted">
-        신고가 쌓여 숨겨진 기록입니다. 문제가 없으면 되돌리고, 있으면 지웁니다. 관리 토큰은 이
-        탭에만 기억됩니다.
+        확인을 기다리는 사진과, 신고가 쌓여 숨겨진 기록입니다. 관리 토큰은 이 탭에만 기억됩니다.
       </p>
       <form id="login" class="park-form">
         <label>관리 토큰 <input id="token" type="password" autocomplete="off" /></label>
         <div class="actions"><button class="primary">불러오기</button></div>
       </form>
+      <h2>확인을 기다리는 사진</h2>
+      <p id="photo-status" class="muted" role="status"></p>
+      <ol id="photos" class="park-list"></ol>
+      <h2>숨겨진 기록</h2>
       <p id="status" class="muted" role="status"></p>
       <ol id="list" class="park-list"></ol>
     </main>
@@ -46,7 +49,54 @@
         n.textContent = text;
         return n;
       }
+      // Photos are fetched with the token and shown from memory; they are not public yet.
+      async function loadPhotos() {
+        $('photos').replaceChildren();
+        try {
+          const { memorials } = await api('/api/admin/photos');
+          $('photo-status').textContent = memorials.length
+            ? `확인을 기다리는 사진 ${memorials.length}장`
+            : '확인을 기다리는 사진이 없습니다.';
+          for (const m of memorials) {
+            const li = document.createElement('li');
+            li.className = 'park-card real';
+            const img = document.createElement('img');
+            img.className = 'park-photo-img';
+            img.alt = `${m.name}의 사진`;
+            const r = await fetch(`/api/admin/photos/${m.id}`, {
+              headers: { authorization: `Bearer ${token}` },
+            });
+            if (r.ok) img.src = URL.createObjectURL(await r.blob());
+            li.append(
+              line('small', new Date(m.createdAt).toLocaleString('ko-KR')),
+              img,
+              line('h3', m.name),
+            );
+            if (m.message) li.append(line('blockquote', m.message));
+            const foot = document.createElement('div');
+            foot.className = 'park-foot';
+            for (const [action, label] of [
+              ['approve', '공원에 보이기'],
+              ['reject', '사진 지우기'],
+            ]) {
+              const b = line('button', label);
+              b.onclick = async () => {
+                if (action === 'reject' && !confirm('이 사진을 지울까요? 기록은 남습니다.')) return;
+                await api(`/api/admin/photos/${m.id}`, { action });
+                URL.revokeObjectURL(img.src);
+                li.remove();
+              };
+              foot.append(b);
+            }
+            li.append(foot);
+            $('photos').append(li);
+          }
+        } catch (e) {
+          $('photo-status').textContent = e.message;
+        }
+      }
       async function load() {
+        loadPhotos();
         $('list').replaceChildren();
         try {
           const { memorials } = await api('/api/admin/memorials');

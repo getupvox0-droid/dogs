@@ -11,6 +11,17 @@ export const PARK_LIMITS = {
   dailyPosts: 3,
   reportsToHide: 3,
   pageSize: 20,
+  // One photo per real dog's memorial, shrunk in the browser before it is sent (park-client.js).
+  photoBytes: 600000,
+  photoSide: 1024,
+  dailyPhotos: 3,
+};
+// What the first bytes of an accepted photo look like.
+export const PHOTO_TYPES = {
+  'image/jpeg': (b) => b[0] === 0xff && b[1] === 0xd8 && b[2] === 0xff,
+  'image/webp': (b) =>
+    String.fromCharCode(b[0], b[1], b[2], b[3]) === 'RIFF' &&
+    String.fromCharCode(b[8], b[9], b[10], b[11]) === 'WEBP',
 };
 const HOMES = ['family', 'street', 'shelter'];
 const LINK =
