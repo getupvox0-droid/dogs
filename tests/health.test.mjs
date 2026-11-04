@@ -83,6 +83,12 @@ test('no unexplained instant death in a sample of complete simulated lives', () 
       else advance(s, 100);
     }
     assert.ok(!s.cause.includes('사인은 모델링하지 않음'));
+    // A street pup's death has a recorded cause (street-survival.js), before adulthood only.
+    if (s.streetPupCause) {
+      assert.ok(s.day < s.reproduction.matureAt);
+      assert.equal(s.log.at(-1).id, 'death');
+      continue;
+    }
     // A crossroad can end a life at once, but only right after the choice that risked it.
     if (s.crossroads.history.at(-1)?.day === s.day && s.log.at(-2).id !== 'illness-onset') {
       assert.equal(s.log.at(-1).id, 'death');

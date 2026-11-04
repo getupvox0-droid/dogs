@@ -30,6 +30,7 @@ import { decisionUid } from './decisions.js';
 import { encounterScene, resolveEncounter } from './encounters.js';
 import { initHealth, healthStep, healthChoice, validateHealth } from './health.js';
 import { dailyMortality } from './statistics.js';
+import { streetPupStep } from './street-survival.js';
 import {
   initWorld,
   initDevelopment,
@@ -568,6 +569,8 @@ function step(s) {
     remember(s, 'maturity');
   }
   const medicalBusy = healthStep(s, { log, random: medicalRandom, decision }, dailyMortality(s));
+  // A street pup's daily danger (street-survival.js): most do not reach adulthood.
+  if (s.alive && !s.pending) streetPupStep(s, { log });
   if (!s.alive) {
     if (s.chronicle) s.chronicle.phase = 'ending';
     return;
