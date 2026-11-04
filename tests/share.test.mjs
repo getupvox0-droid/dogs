@@ -92,7 +92,7 @@ test('living lives and old saves without a trail cannot be shared', () => {
 test('tampered, truncated or other-version links are refused', () => {
   const code = encodeLife(played(5));
   const f = code.split('.');
-  assert.throws(() => replayLife('v9' + code.slice(2)));
+  assert.throws(() => replayLife('v999' + code.slice(code.indexOf('.'))));
   assert.throws(() => replayLife(code.slice(0, -3)));
   assert.throws(() =>
     replayLife([...f.slice(0, 7), (parseInt(f[7], 36) + 1).toString(36), ...f.slice(8)].join('.')),

@@ -1105,7 +1105,7 @@ export function initCrossroads(s) {
 // Generated crossroads: setting × lure × hazard, plus the dog's need and who is near.
 // The same lure and hazard never meet twice in one life while other pairs remain.
 const WHO = {
-  mother: '어미의 냄새가 등 뒤에 있다.',
+  mother: '등 뒤에 어미의 온기가 있다.',
   sibling: '형제 하나가 옆에 바짝 붙어 있다.',
   person: '익숙한 사람의 목소리가 조금 떨어진 곳에서 들린다.',
 };
@@ -1192,7 +1192,7 @@ function generate(s, state) {
 }
 // The risk model for a generated moment. Rushing is the most rewarding and the most dangerous;
 // being careful halves the reward and cuts the danger to about a third; staying never hurts.
-function generatedOptions(s, g) {
+export function generatedOptions(s, g) {
   const L = LURES[g.lure],
     H = HAZARDS[g.hazard],
     young = s.day < 180,
@@ -1480,13 +1480,19 @@ function litterOutcome(s, kind, log) {
     return;
   }
   if (kind === 'kept') {
-    for (const k of pups) k.bond = Math.min(100, k.bond + 6);
+    pups.forEach((k, i) => {
+      k.bond = Math.min(100, k.bond + 6);
+      // Kept close and warm, a pup that would have died in the next weeks is spared half the time.
+      if (k.fateDay != null && k.fateDay < s.day + 30 && mix(s.seed + s.day, 2741 + i) % 2)
+        k.fateDay = null;
+    });
     return;
   }
   const k = pups.at(-1);
   if (!k) return;
   k.present = false;
   k.destination = '어린 날 헤어짐 · 행방을 알 수 없음';
+  k.reunionAt = null;
   log(
     s,
     'child-lost',
@@ -1528,3 +1534,5 @@ export function validateCrossroads(s) {
     throw Error('손상된 갈림길 기록');
 }
 const validId = (id) => CROSSROADS.some((c) => c.id === id);
+// For the text checker (scripts/check-crossroad-text.mjs): every setting a life could meet.
+export { settingFamilyList, WHO, DEN };

@@ -121,7 +121,8 @@ test('female pregnancy progresses through confirmation and nesting to an individ
   tick(x, due);
   assert.equal(x.r.pregnancy, null);
   assert.equal(x.r.litters.length, 1);
-  assert.ok(x.r.children.length >= 1 && x.r.children.length <= 6);
+  // Litter size follows field data: mean about 4.9, up to 13 (reproduction-data.js).
+  assert.ok(x.r.children.length >= 1 && x.r.children.length <= 13);
   assert.equal(new Set(x.r.children.map((c) => c.id)).size, x.r.children.length);
   assert.ok(x.r.children.every((c) => c.birthDay === due && c.motherId === x.s.lifeId));
   const ids = x.s.log.map((e) => e.id);
@@ -133,7 +134,10 @@ test('offspring need milk, develop in order, depart after weaning and can revisi
   const x = pregnant(),
     due = x.r.pregnancy.due;
   tick(x, due + 240);
-  for (const c of x.r.children) {
+  // A few pups die young even in a home (reproduction-data.js); the rest grow and leave.
+  const grown = x.r.children.filter((c) => !/어린 날/.test(c.destination || ''));
+  assert.ok(grown.length >= 1);
+  for (const c of grown) {
     for (const id of ['eyes', 'walking', 'food', 'weaning']) assert.equal(c.flags[id], true);
     assert.ok(c.departAt - c.birthDay >= 70);
     assert.ok(
@@ -212,4 +216,17 @@ test('migration creates no retroactive pregnancies or children and malformed fam
   x.r.pregnancy.due = x.r.pregnancy.start + 2;
   assert.throws(() => restore(serialize(x.s)));
   assert.deepEqual(FAMILY_SOURCE.gestationFromConception, [62, 64]);
+});
+
+test('street reproduction figures carry their sources, and litter sizes match the field mean', async () => {
+  const { STREET_REPRODUCTION, litterSize, CONCEIVE_PER_HEAT } = await import(
+    '../dist/reproduction-data.js'
+  );
+  for (const v of Object.values(STREET_REPRODUCTION)) assert.ok(v.source.length > 20);
+  let seed = 7,
+    sum = 0;
+  const rand = () => (seed = (Math.imul(seed, 1664525) + 1013904223) >>> 0) / 4294967296;
+  for (let i = 0; i < 4000; i++) sum += litterSize(rand);
+  assert.ok(Math.abs(sum / 4000 - STREET_REPRODUCTION.litterSize.mean) < 0.2);
+  assert.ok(CONCEIVE_PER_HEAT > 0 && CONCEIVE_PER_HEAT < 1);
 });
