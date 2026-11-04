@@ -45,7 +45,16 @@ const LABELS = {
   'storm-wise': '폭우 속에서 벽에 붙을 줄 앎',
   'snow-wise': '눈 속에서 발자국을 되짚을 줄 앎',
 };
-const TURNS = ['adopt', 'rescued-shelter', 'caught-shelter', 'gate-out', 'shelter-escape'];
+const TURNS = [
+  'adopt',
+  'rescued-shelter',
+  'caught-shelter',
+  'gate-out',
+  'shelter-escape',
+  'shelter-return',
+  'guardian-changed',
+  'child-lost',
+];
 
 // Traits in the order the dog gained them; two marks with the same meaning show once.
 export function traitsOf(s) {

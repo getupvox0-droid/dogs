@@ -47,6 +47,31 @@ export function initFamily(s) {
     nextConceptionAfter: 0,
   };
 }
+// A crossroad where the dog followed another dog's scent and found it (crossroads.js):
+// on the street that dog becomes its companion, the way repeated meetings would.
+export function bondFromScent(s) {
+  initFamily(s);
+  const r = s.reproduction;
+  if (r.companion || r.neutered || s.home !== 'street' || s.day < r.matureAt) return false;
+  const f = s.friend?.met && s.friend.area === s.areaId ? s.friend : null;
+  r.companion = {
+    id: f?.id || `scent-${s.areaId}`,
+    friendId: f?.id || null,
+    friendMeetings: f?.meetings ?? 0,
+    name: f?.name || '냄새를 따라가 만난 개',
+    area: s.areaId,
+    sex: s.sex === '암컷' ? '수컷' : '암컷',
+    neutered: false,
+    adult: true,
+    bond: Math.max(45, f?.bond ?? 0),
+    meetings: (f?.meetings ?? 0) + 1,
+    lastMet: s.day,
+    active: true,
+    sharedHome: false,
+  };
+  syncFamily(s);
+  return true;
+}
 export function canConceive(s) {
   initFamily(s);
   const r = s.reproduction,
@@ -54,7 +79,8 @@ export function canConceive(s) {
   return (
     s.alive &&
     !r.neutered &&
-    s.day >= Math.max(365, r.matureAt) &&
+    // Street dogs breed younger than managed homes allow (game assumption).
+    s.day >= Math.max(s.home === 'street' ? 240 : 365, r.matureAt) &&
     s.day < 2920 &&
     !s.medical.episode &&
     !s.clinical?.conditions?.patella?.diagnosed &&

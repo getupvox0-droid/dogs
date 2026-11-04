@@ -15,6 +15,7 @@ import {
   settingFamily,
 } from './crossroad-parts.js';
 import { applyTurn } from './life-turns.js';
+import { bondFromScent } from './family.js';
 
 const YEAR = 365;
 const has = (s, mark) => s.crossroads?.marks.includes(mark);
@@ -27,7 +28,17 @@ const frail = (s) => s.health < 50;
 const o = (
   weight,
   text,
-  { delta = {}, mark = null, hurt = null, die = null, illness = null, turn = null } = {},
+  {
+    delta = {},
+    mark = null,
+    hurt = null,
+    die = null,
+    illness = null,
+    turn = null,
+    pup = null,
+    bond = false,
+    owe = null,
+  } = {},
 ) => ({
   weight: typeof weight === 'function' ? weight : () => weight,
   text,
@@ -37,12 +48,26 @@ const o = (
   die,
   illness,
   turn,
+  // pup: 'lost' takes one of the young away, 'kept' keeps them all close (litter crossroads).
+  pup,
+  // bond: finding another dog's owner of a scent can start a pairing (family.js).
+  bond,
+  // owe: someone this dog helped or was kind to may come back later (echoes below).
+  owe,
 });
 // The records written when a crossroad turns a life.
 const TURN_TEXT = {
   family: [
     'family',
     '손 냄새를 따라 한참 걸었다. 그 사람은 문 앞에서 멈추더니 안쪽에 물그릇을 놓았다. 오늘 밤은 지붕 아래에서 잔다.',
+  ],
+  surrendered: [
+    'surrendered',
+    '사람이 내 담요와 그릇을 챙겨 낯선 건물로 데려갔다. 문 너머로 익숙한 발소리가 멀어진다.',
+  ],
+  rehomed: [
+    'rehomed',
+    '떠나는 사람의 가방 냄새를 따라갔다. 새로 도착한 방에는 그 사람의 냄새만 익숙하다.',
   ],
   rescued: [
     'rescued',
@@ -588,6 +613,399 @@ export const CROSSROADS = [
   },
 ];
 
+const youngPups = (s) =>
+  (s.reproduction?.children || []).filter((k) => k.present && s.day - k.birthDay < 70);
+const litterMother = (s) => s.reproduction?.litters?.at(-1)?.parentRole === 'mother';
+// Raising a litter: the young are what can be lost now.
+CROSSROADS.push(
+  {
+    id: 'den-flood',
+    from: 240,
+    to: 9 * YEAR,
+    ok: (s) => youngPups(s).length >= 2 && litterMother(s) && s.home === 'street',
+    text: (s) =>
+      `빗물이 잠자리 안쪽까지 스며든다. ${youngPups(s).length}마리의 작은 몸이 젖은 채 떨며 내 배 밑으로 파고든다. 근처에 더 높은 틈이 있다.`,
+    know: '갓 태어난 새끼는 체온을 스스로 지키지 못해, 젖은 채로 하룻밤을 보내면 목숨을 잃기도 합니다.',
+    options: [
+      {
+        id: 'carry',
+        text: '빗속을 오가며 새끼를 하나씩 물어 옮긴다',
+        outcomes: [
+          o(65, '마지막 새끼까지 높은 틈으로 옮겼다. 젖은 몸들을 하나씩 핥아 말렸다.', {
+            delta: { fatigue: 35, health: -4 },
+            pup: 'kept',
+            mark: 'bold',
+          }),
+          o(
+            35,
+            '옮기는 사이 새끼 하나의 울음이 빗소리에 묻혔다. 돌아갔을 때 그 자리는 비어 있었다.',
+            {
+              delta: { fatigue: 35, stress: 15 },
+              pup: 'lost',
+            },
+          ),
+        ],
+      },
+      {
+        id: 'cover',
+        text: '몸을 둥글게 말아 새끼들을 덮는다',
+        outcomes: [
+          o(50, '밤새 몸으로 덮고 버텼다. 새벽에 비가 그치자 작은 숨소리가 모두 들렸다.', {
+            delta: { fatigue: 20, comfort: -8 },
+            pup: 'kept',
+            mark: 'patient',
+          }),
+          o(50, '새벽까지 덮고 있었지만 가장 작은 새끼의 몸이 차갑게 식었다.', {
+            delta: { stress: 18 },
+            pup: 'lost',
+          }),
+        ],
+      },
+    ],
+  },
+  {
+    id: 'den-hunger',
+    from: 240,
+    to: 9 * YEAR,
+    ok: (s) => youngPups(s).length >= 1 && litterMother(s) && s.home !== 'family',
+    text: () =>
+      '며칠째 먹지 못해 젖이 잘 나오지 않는다. 새끼들이 젖을 물고 보챈다. 멀리서 음식 냄새가 난다.',
+    know: '어미가 오래 굶으면 젖이 마르고, 그렇다고 오래 자리를 비우면 새끼가 다른 짐승이나 추위에 노출됩니다.',
+    options: [
+      {
+        id: 'go',
+        text: '새끼들을 두고 음식 냄새를 찾아 나선다',
+        outcomes: [
+          o(60, '배를 채우고 서둘러 돌아왔다. 젖이 다시 돌자 새끼들이 조용해졌다.', {
+            delta: { hunger: -30 },
+            pup: 'kept',
+          }),
+          o(40, '돌아오는 데 오래 걸렸다. 잠자리에 남은 새끼의 수가 줄어 있었다.', {
+            delta: { hunger: -25, stress: 16 },
+            pup: 'lost',
+          }),
+        ],
+      },
+      {
+        id: 'stay',
+        text: '배고픔을 참고 새끼들 곁에 머문다',
+        outcomes: [
+          o(70, '몸이 마르는 것이 느껴졌지만 새끼들의 온기는 그대로였다.', {
+            delta: { hunger: 18, health: -8 },
+            pup: 'kept',
+            mark: 'patient',
+          }),
+          o(30, '젖이 끝내 모자랐다. 가장 약한 새끼가 더 이상 젖을 찾지 않았다.', {
+            delta: { hunger: 12, health: -5, stress: 14 },
+            pup: 'lost',
+          }),
+        ],
+      },
+    ],
+  },
+  {
+    id: 'den-intruder',
+    from: 240,
+    to: 9 * YEAR,
+    ok: (s) => youngPups(s).length >= 1 && s.home !== 'family',
+    text: () =>
+      '잠자리 앞에 낯선 개가 서서 안쪽 냄새를 맡는다. 새끼들이 작게 낑낑댄다. 상대의 몸집이 나보다 크다.',
+    know: '떠도는 수컷이 남의 새끼를 해치는 일이 있습니다. 어미가 막아서면 크게 다칠 수 있습니다.',
+    options: [
+      {
+        id: 'guard',
+        text: '털을 세우고 잠자리 앞을 막아선다',
+        outcomes: [
+          o(55, '이빨을 드러내고 버티자 상대가 물러났다. 새끼들 곁으로 돌아가 몸을 말았다.', {
+            pup: 'kept',
+            mark: 'bold',
+            delta: { stress: 8 },
+          }),
+          o(45, '상대가 달려들었다. 물리면서도 끝까지 잠자리 앞을 비키지 않았다.', {
+            hurt: '새끼를 지키다 물린 목과 어깨가 붓고 열이 난다.',
+            pup: 'kept',
+            mark: 'bold',
+          }),
+        ],
+      },
+      {
+        id: 'lure',
+        text: '잠자리에서 떨어진 쪽으로 상대를 끌고 간다',
+        outcomes: [
+          o(60, '짖으며 멀리 끌어내자 상대가 쫓아오다 흥미를 잃었다. 돌아와 새끼들을 세었다.', {
+            pup: 'kept',
+            delta: { fatigue: 20 },
+          }),
+          o(40, '돌아와 보니 잠자리가 흐트러져 있었다. 새끼 하나가 보이지 않는다.', {
+            pup: 'lost',
+            delta: { stress: 18 },
+          }),
+        ],
+      },
+      {
+        id: 'hide',
+        text: '새끼들을 안쪽으로 밀어 넣고 몸을 낮춘다',
+        outcomes: [
+          o(70, '숨을 죽이고 기다리자 상대가 냄새를 잃고 떠났다.', { pup: 'kept' }),
+          o(30, '상대가 한참을 서성이다 떠났다. 그 뒤로 새끼들이 오래 떨었다.', {
+            delta: { stress: 10 },
+          }),
+        ],
+      },
+    ],
+  },
+);
+// Litters in a home: the young are given away, or wander where they should not.
+CROSSROADS.push(
+  {
+    id: 'den-keep',
+    from: 240,
+    to: 9 * YEAR,
+    ok: (s) => youngPups(s).length >= 2 && s.home === 'family',
+    text: () =>
+      '낯선 사람이 와서 새끼를 하나씩 안아 본다. 한 마리를 품에 안은 채 현관 쪽으로 걸어간다.',
+    know: '가정에서 태어난 새끼는 대개 생후 두세 달이면 다른 집으로 보내집니다.',
+    options: [
+      {
+        id: 'follow',
+        text: '문 앞까지 따라가 낑낑대며 앉는다',
+        outcomes: [
+          o(
+            35,
+            '사람들이 나를 한참 바라보더니 그 새끼를 내려놓았다. 한 마리는 이 집에 남게 되었다.',
+            {
+              pup: 'stay',
+              delta: { familyBond: 4 },
+            },
+          ),
+          o(65, '문이 닫혔다. 문틈에 코를 대고 한참 냄새를 맡았다.', { delta: { stress: 12 } }),
+        ],
+      },
+      {
+        id: 'lick',
+        text: '마지막으로 새끼의 얼굴을 핥아 준다',
+        outcomes: [
+          o(100, '작은 얼굴을 핥아 주고 잠자리로 돌아왔다. 남은 새끼들이 몸을 붙여 왔다.', {
+            delta: { familyBond: 3, stress: 4 },
+            mark: 'gentle',
+          }),
+        ],
+      },
+    ],
+  },
+  {
+    id: 'den-stairs',
+    from: 240,
+    to: 9 * YEAR,
+    ok: (s) => youngPups(s).length >= 1 && s.home === 'family',
+    text: () => '새끼 하나가 계단 끝까지 기어갔다. 앞발이 허공을 더듬는다.',
+    know: '어린 새끼는 계단에서 떨어지면 크게 다칩니다.',
+    options: [
+      {
+        id: 'grab',
+        text: '달려가 목덜미를 물어 끌어온다',
+        outcomes: [
+          o(80, '목덜미를 물어 잠자리로 데려왔다. 새끼가 버둥거리다 젖을 찾았다.', {
+            pup: 'kept',
+            mark: 'bold',
+          }),
+          o(20, '끌어오다 함께 계단을 굴렀다. 새끼는 내 배 위에 떨어졌다.', {
+            pup: 'kept',
+            hurt: '계단에서 구르며 부딪힌 다리와 허리가 아프다.',
+          }),
+        ],
+      },
+      {
+        id: 'bark',
+        text: '짖어서 사람을 부른다',
+        outcomes: [
+          o(70, '사람이 달려와 새끼를 안아 올렸다. 그날 계단 앞에 낮은 문이 생겼다.', {
+            pup: 'kept',
+            delta: { familyBond: 4 },
+          }),
+          o(
+            30,
+            '사람이 오기 전에 새끼가 아래로 떨어졌다. 사람이 급히 안고 나갔고, 돌아오지 않았다.',
+            {
+              pup: 'lost',
+              delta: { stress: 16 },
+            },
+          ),
+        ],
+      },
+    ],
+  },
+);
+// What happens among the people a dog lives with, and the moment it meets the dog.
+// Each of these happens in only some homes: a life meets one or two, not all of them.
+const family = (s) => s.home === 'family' && !s.story?.lost;
+const someHomes = (id, share) => (s) =>
+  family(s) &&
+  mix(s.seed, [...id].reduce((h, ch) => h * 31 + ch.charCodeAt(0), 7) % 997) % 100 < share;
+CROSSROADS.push(
+  {
+    id: 'new-baby',
+    from: 2 * YEAR,
+    to: 12 * YEAR,
+    ok: someHomes('new-baby', 35),
+    text: () =>
+      '집에 아주 작은 사람이 생겼다. 젖 냄새와 우는 소리가 집 안을 채운다. 사람들이 나를 보는 시간이 줄었다.',
+    know: '아기가 태어난 집에서는 개가 소외되거나, 아기에게 겁을 줬다고 여겨져 다른 곳으로 보내지기도 합니다.',
+    options: [
+      {
+        id: 'gentle',
+        text: '작은 사람 곁에 조용히 엎드린다',
+        outcomes: [
+          o(75, '작은 사람이 잠든 곁에 엎드렸다. 사람이 내 머리를 쓰다듬고 고맙다는 소리를 냈다.', {
+            delta: { familyBond: 10 },
+            mark: 'gentle',
+          }),
+          o(25, '가까이 가자 사람이 놀라 나를 밀어냈다. 문 밖에서 오래 기다렸다.', {
+            delta: { familyBond: -4, stress: 8 },
+          }),
+        ],
+      },
+      {
+        id: 'bark',
+        text: '나를 봐 달라고 짖으며 사람 다리를 건드린다',
+        outcomes: [
+          o(60, '사람이 잠깐 나와 놀아 주었다. 다시 작은 사람 쪽으로 돌아갔다.', {
+            delta: { familyBond: 2, stress: 4 },
+          }),
+          o(
+            40,
+            '짖는 소리에 작은 사람이 크게 울었다. 그날부터 사람들이 낮게 이야기하는 일이 잦아졌다.',
+            {
+              delta: { familyBond: -8, stress: 10 },
+              turn: TURN_TEXT.surrendered,
+            },
+          ),
+        ],
+      },
+      {
+        id: 'away',
+        text: '구석 잠자리로 물러나 지켜본다',
+        outcomes: [
+          o(100, '구석에서 작은 사람의 냄새를 익혔다. 며칠 뒤에는 우는 소리에도 귀만 움직였다.', {
+            delta: { stress: -2 },
+            mark: 'patient',
+          }),
+        ],
+      },
+    ],
+  },
+  {
+    id: 'moving-day',
+    from: YEAR,
+    to: 15 * YEAR,
+    ok: someHomes('moving-day', 40),
+    text: () =>
+      '상자가 쌓이고 낯선 사람들이 무거운 것을 들고 드나든다. 현관문이 하루 종일 열려 있다. 익숙한 냄새가 하나씩 사라진다.',
+    know: '이삿날에는 문이 계속 열려 있어 놀란 개가 밖으로 나가 길을 잃는 일이 많습니다.',
+    options: [
+      {
+        id: 'follow',
+        text: '내 담요를 든 낯선 사람을 따라 문밖으로 나간다',
+        outcomes: [
+          o(50, '담요를 따라가니 큰 차 안이었다. 사람이 나를 찾아 안아 올렸다.', {
+            delta: { stress: 10, familyBond: 3 },
+          }),
+          o(50, '문밖에서 담요 냄새를 놓쳤다. 낯선 골목들이 겹겹이 이어졌다.', {
+            mark: 'wanderer',
+            turn: TURN_TEXT.lost,
+          }),
+        ],
+      },
+      {
+        id: 'crate',
+        text: '이동장 안에 들어가 웅크린다',
+        outcomes: [
+          o(100, '이동장 안에서 사람 냄새를 맡으며 기다렸다. 흔들림이 멈추자 새 방이었다.', {
+            delta: { stress: 4 },
+            mark: 'patient',
+          }),
+        ],
+      },
+    ],
+  },
+  {
+    id: 'people-split',
+    from: YEAR,
+    to: 15 * YEAR,
+    ok: someHomes('people-split', 25),
+    text: () =>
+      '사람들이 큰 소리로 다툰다. 한 사람이 가방을 싸서 현관에 섰다. 나를 한 번 돌아본다.',
+    know: '함께 살던 사람들이 헤어지면 개는 둘 중 한 사람과 살게 되고, 다른 사람과는 다시 만나지 못하기도 합니다.',
+    options: [
+      {
+        id: 'go',
+        text: '가방을 든 사람을 따라간다',
+        outcomes: [
+          o(100, '현관문이 닫히기 전에 따라 나섰다.', {
+            delta: { stress: 12 },
+            turn: TURN_TEXT.rehomed,
+          }),
+        ],
+      },
+      {
+        id: 'stay',
+        text: '남은 사람의 발치에 엎드린다',
+        outcomes: [
+          o(100, '닫힌 문을 오래 바라보았다. 남은 사람이 내 등에 손을 얹었다.', {
+            delta: { stress: 8, familyBond: 6 },
+          }),
+        ],
+      },
+    ],
+  },
+  {
+    id: 'carer-down',
+    from: 3 * YEAR,
+    to: 25 * YEAR,
+    ok: someHomes('carer-down', 20),
+    text: () => '사람이 바닥에 쓰러진 채 일어나지 않는다. 밥 시간이 지났다. 숨소리가 가늘다.',
+    know: '혼자 사는 사람이 쓰러지면, 개의 짖는 소리가 이웃이 알아차리는 유일한 신호가 되기도 합니다.',
+    options: [
+      {
+        id: 'bark',
+        text: '현관문에 대고 멈추지 않고 짖는다',
+        outcomes: [
+          o(
+            70,
+            '한참 짖자 문 두드리는 소리가 났다. 사람들이 들어와 쓰러진 사람을 데려갔다. 며칠 뒤 사람이 돌아와 나를 오래 안았다.',
+            {
+              delta: { familyBond: 15, fatigue: 20 },
+              mark: 'bold',
+            },
+          ),
+          o(
+            30,
+            '목이 쉬도록 짖었다. 한참 뒤에야 사람들이 왔다. 그 사람은 돌아오지 않았고, 나는 다른 사람의 손에 맡겨졌다.',
+            {
+              delta: { stress: 20 },
+              turn: TURN_TEXT.rehomed,
+            },
+          ),
+        ],
+      },
+      {
+        id: 'lie',
+        text: '사람 곁에 몸을 붙이고 눕는다',
+        outcomes: [
+          o(50, '곁에서 체온을 나누는 사이 사람이 눈을 떴다. 떨리는 손으로 전화를 들었다.', {
+            delta: { familyBond: 12 },
+            mark: 'gentle',
+          }),
+          o(50, '곁에 누워 기다렸다. 이틀 뒤 사람들이 왔을 때 그 사람은 일어나지 않았다.', {
+            delta: { stress: 25, hunger: 30 },
+            turn: TURN_TEXT.surrendered,
+          }),
+        ],
+      },
+    ],
+  },
+);
+
 // Old age: moments that only come late, when the body no longer keeps up with the habit.
 CROSSROADS.push(
   {
@@ -679,6 +1097,7 @@ export function initCrossroads(s) {
   s.crossroads.genNext ??=
     s.home === 'street' ? 50 + (mix(s.seed, 2720) % 15) : 75 + (mix(s.seed, 2720) % 45);
   s.crossroads.forage ??= 0;
+  s.crossroads.debts ??= [];
   s.crossroads.used ??= [];
   return s.crossroads;
 }
@@ -829,8 +1248,10 @@ function generatedOptions(s, g) {
           o(w * hitTurn[0], hitTurn[1], { ...hit, ...hitTurn[3], turn: hitTurn[2] }),
         ]
       : [o(w, hit.text, hit)];
+  // Finding the owner of a scent on the street can start a pairing (family.js).
+  const owe = g.lure === 'buddy' ? 'buddy' : g.lure === 'person' ? 'person' : null;
   const rewards = (w, opts) => [
-    o(w * (1 - follow), reward(), opts),
+    o(w * (1 - follow), reward(), { ...opts, bond: g.lure === 'scent', owe }),
     o(w * follow, reward(), { ...opts, mark: 'trusting', turn: TURN_TEXT.family }),
   ];
   const rush = [
@@ -923,13 +1344,21 @@ const PLACE_BOUND = [
   'high-bed',
   'last-long-walk',
   'old-sun',
+  'den-flood',
+  'den-hunger',
+  'den-intruder',
+  'den-keep',
+  'den-stairs',
 ];
 // Every 2–5 months in the first two years (when most street lives turn), then every 6–14 months.
 export function crossroadStep(s, { decision }) {
   const state = initCrossroads(s);
   if (s.pending) return false;
-  if (s.day < state.next) return generatedStep(s, state, decision);
-  let pool = CROSSROADS.filter((c) => eligible(s, c));
+  // A litter only stays small for a few weeks: its moments come as soon as they can.
+  const urgent = CROSSROADS.filter((c) => c.id.startsWith('den-') && eligible(s, c));
+  let pool = urgent.length ? urgent : null;
+  if (!pool && s.day < state.next) return generatedStep(s, state, decision);
+  pool ??= CROSSROADS.filter((c) => eligible(s, c));
   if (!pool.length) {
     state.next = s.day + 20;
     return generatedStep(s, state, decision);
@@ -974,8 +1403,8 @@ export function crossroadChoice(s, p, id, { log, remember }) {
         : CROSSROADS.find((x) => 'crossroad:' + x.id === p.id),
     option = c?.options.find((x) => x.id === id);
   if (!option) return false;
-  const out = pickOutcome(s, option),
-    state = initCrossroads(s);
+  const state = initCrossroads(s),
+    out = echo(s, state, pickOutcome(s, option));
   for (const [k, v] of Object.entries(out.delta)) {
     const owner = k in s.needs ? s.needs : s;
     owner[k] = Math.max(0, Math.min(100, owner[k] + v));
@@ -996,6 +1425,9 @@ export function crossroadChoice(s, p, id, { log, remember }) {
   }
   state.history.push({ id: c.id, day: s.day, option: id, outcome: option.outcomes.indexOf(out) });
   remember(s, `crossroad:${c.id}:${id}`);
+  if (out.owe && !state.debts.includes(out.owe)) state.debts.push(out.owe);
+  if (out.bond) bondFromScent(s);
+  if (out.pup) litterOutcome(s, out.pup, log);
   if (out.hurt) beginIllness(s, { log, random: () => 0 }, out.illness || 'injury', out.hurt);
   if (out.turn && !out.die) applyTurn(s, out.turn, { log, remember });
   if (out.die) {
@@ -1006,6 +1438,60 @@ export function crossroadChoice(s, p, id, { log, remember }) {
     if (s.chronicle) s.chronicle.phase = 'ending';
   }
   return true;
+}
+// Echoes: someone this dog once helped comes back at a bad moment. A companion it shielded
+// can turn a fatal moment into a wound or a wound into a fright; a person it trusted on the
+// street can pick it up when hurt. Each debt is used once.
+const ECHO = {
+  buddy:
+    '그때 앞을 막아 주었던 개가 어디선가 달려와 곁에 섰다. 함께 짖으며 버티는 사이 위험이 지나갔다.',
+  person: '예전에 손바닥의 먹이를 내밀던 사람이 다친 나를 알아보았다. 천으로 감싸 안아 들었다.',
+};
+function echo(s, state, out) {
+  const roll = mix(s.seed + s.day, (s.decisionSerial || 0) + 2731) % 100;
+  if ((out.die || out.hurt) && state.debts.includes('buddy') && roll < 50) {
+    state.debts = state.debts.filter((d) => d !== 'buddy');
+    const softer = out.die
+      ? {
+          ...out,
+          die: null,
+          hurt: '위험에서 겨우 빠져나왔지만 다리를 다쳤다. 곁의 개가 상처를 핥아 준다.',
+        }
+      : { ...out, hurt: null, mark: null };
+    return { ...softer, text: `${out.text} ${ECHO.buddy}`, echoed: 'buddy' };
+  }
+  if (out.hurt && !out.die && s.home === 'street' && state.debts.includes('person') && roll < 60) {
+    state.debts = state.debts.filter((d) => d !== 'person');
+    return {
+      ...out,
+      text: `${out.text} ${ECHO.person}`,
+      turn: TURN_TEXT.rescued,
+      echoed: 'person',
+    };
+  }
+  return out;
+}
+// A litter crossroad keeps the young close or loses one of them (family.js holds the children).
+function litterOutcome(s, kind, log) {
+  const pups = youngPups(s);
+  if (kind === 'stay') {
+    // One of the litter stays in this home for good (family.js stops its departure).
+    if (pups[0]) pups[0].departAt = 1e9;
+    return;
+  }
+  if (kind === 'kept') {
+    for (const k of pups) k.bond = Math.min(100, k.bond + 6);
+    return;
+  }
+  const k = pups.at(-1);
+  if (!k) return;
+  k.present = false;
+  k.destination = '어린 날 헤어짐 · 행방을 알 수 없음';
+  log(
+    s,
+    'child-lost',
+    `${k.name}의 냄새가 잠자리에서 사라졌다. 남은 새끼들 곁에서 몸을 더 둥글게 만다.`,
+  );
 }
 export function validCrossroad(id) {
   return id === 'crossroad:gen' || CROSSROADS.some((c) => 'crossroad:' + c.id === id);
@@ -1033,6 +1519,7 @@ export function validateCrossroads(s) {
       !c.marks.every((m) => typeof m === 'string') ||
       !Array.isArray(c.history) ||
       (c.used != null && (!Array.isArray(c.used) || !c.used.every((u) => typeof u === 'string'))) ||
+      (c.debts != null && (!Array.isArray(c.debts) || !c.debts.every((d) => d in ECHO))) ||
       (c.forage != null && (!Number.isFinite(c.forage) || c.forage < 0 || c.forage > 30)) ||
       (c.markDays != null &&
         (typeof c.markDays !== 'object' || !Object.values(c.markDays).every(Number.isInteger))) ||
