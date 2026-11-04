@@ -102,3 +102,23 @@ test('tampered, truncated or other-version links are refused', () => {
   );
   assert.throws(() => decodeLife('nonsense'));
 });
+
+test("a life born in the player's own country replays from its link", async () => {
+  const { createLife, advance, choose, acknowledgeBirth } = await import('../dist/engine.js');
+  const s = createLife(77, 'life-77-home', { birthMode: 'home', country: 'TH' });
+  setBirthDate(s, '2026-11-04');
+  acknowledgeBirth(s);
+  let k = 0;
+  while (s.alive) {
+    if (!s.pending) advance(s, 1);
+    else choose(s, s.pending.options[k++ % s.pending.options.length].id, decisionUid(s));
+  }
+  const code = encodeLife(s);
+  assert.match(code.split('.')[4], /^hTH$/);
+  const again = replayLife(code);
+  assert.equal(again.country.id, 'TH');
+  assert.deepEqual(
+    again.log.map((e) => e.text),
+    s.log.map((e) => e.text),
+  );
+});

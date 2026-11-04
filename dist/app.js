@@ -56,6 +56,7 @@ import {
 import { PARK_LIMITS } from './park.js';
 import { KIND_NAMES, companionAlbum, longestCompanion } from './album.js';
 import { traitsOf, shapingChoices } from './traits.js';
+import { browserCountry } from './home-country.js';
 import { UK_REFERENCE } from './statistics.js';
 import { resolveChoice, playbackTick } from './playback.js';
 import { lookOf, imageFor, photoLogIndices, atlasFrame } from './visuals.js';
@@ -124,6 +125,10 @@ function loadProfile() {
     const age = Number(p.myDog?.age);
     return {
       birthMode: p.birthMode in BIRTH_MODES ? p.birthMode : 'explore',
+      // The player's own country for "내 나라에서"; guessed from the browser until they pick one.
+      homeCountry: COUNTRIES.some((c) => c.id === p.homeCountry)
+        ? p.homeCountry
+        : browserCountry(COUNTRIES.map((c) => c.id)) || '',
       lifeLength: p.lifeLength in LIFE_LENGTHS ? p.lifeLength : 'normal',
       readingSpeed: p.readingSpeed in READING_SPEEDS ? p.readingSpeed : 'normal',
       myDog: {
@@ -134,6 +139,7 @@ function loadProfile() {
   } catch {
     return {
       birthMode: 'explore',
+      homeCountry: '',
       lifeLength: 'normal',
       readingSpeed: 'normal',
       myDog: { name: '', age: null },
@@ -143,7 +149,10 @@ function loadProfile() {
 function saveProfile() {
   const age = $('my-dog-age').value === '' ? null : Math.round(Number($('my-dog-age').value));
   const profile = {
-    birthMode: $('birth-mode-real').checked ? 'real' : 'explore',
+    birthMode: Object.keys(BIRTH_MODES).find((m) => $('birth-mode-' + m).checked) || 'explore',
+    homeCountry: COUNTRIES.some((c) => c.id === $('home-country').value)
+      ? $('home-country').value
+      : '',
     lifeLength: Object.keys(LIFE_LENGTHS).find((k) => $('life-length-' + k).checked) || 'normal',
     readingSpeed: $('read-speed').value in READING_SPEEDS ? $('read-speed').value : 'normal',
     myDog: {
@@ -154,9 +163,18 @@ function saveProfile() {
   try {
     localStorage.setItem(profileKey, JSON.stringify(profile));
   } catch {}
-  $('birth-mode-note').textContent = BIRTH_MODES[profile.birthMode].note;
+  showBirthMode(profile);
   $('life-length-note').textContent = LIFE_LENGTHS[profile.lifeLength].note;
   return profile;
+}
+// The country picker shows only for "내 나라에서", and says so when the country is not in the game.
+function showBirthMode(p) {
+  const home = p.birthMode === 'home';
+  $('home-country-row').hidden = !home;
+  $('birth-mode-note').textContent =
+    home && !p.homeCountry
+      ? '당신의 나라는 아직 게임에 없거나 알아내지 못했습니다. 아래 12개 나라 중에서 골라 주세요.'
+      : BIRTH_MODES[p.birthMode].note;
 }
 function loadCollection() {
   try {
@@ -631,9 +649,11 @@ function render() {
         '출생 추첨',
         life.daily
           ? `오늘의 강아지 (${life.daily}) · 그날 태어난 모두가 같은 시작 · 현실 비율`
-          : life.birthMode === 'real'
-            ? '현실 비율 · 12개 나라의 개 수 추정치 (세계 전체 대표 아님)'
-            : '골고루 둘러보기 · 12개 나라와 출생 환경을 같은 확률로',
+          : life.birthMode === 'home'
+            ? `내 나라에서 · ${life.country.name} 안의 반려견·길개 추정치 비율`
+            : life.birthMode === 'real'
+              ? '현실 비율 · 12개 나라의 개 수 추정치 (세계 전체 대표 아님)'
+              : '골고루 둘러보기 · 12개 나라와 출생 환경을 같은 확률로',
       ],
       [
         '한 생의 길이',
@@ -706,14 +726,20 @@ function beginLife(make) {
   save();
   open();
 }
-$('birth').onclick = () =>
+$('birth').onclick = () => {
+  if (loadProfile().birthMode === 'home' && !loadProfile().homeCountry) {
+    alert('"내 나라에서"로 태어나려면 먼저 나라를 골라 주세요.');
+    return;
+  }
   beginLife((profile) => {
     const s = createLife(crypto.getRandomValues(new Uint32Array(1))[0], crypto.randomUUID(), {
       birthMode: profile.birthMode,
+      country: profile.homeCountry,
     });
     setBirthDate(s, koreaDate());
     return s;
   });
+};
 $('birth-daily').onclick = () => beginLife(() => createDailyLife(koreaDate()));
 $('resume').onclick = () => {
   leaveShared();
@@ -1307,7 +1333,16 @@ try {
   $('my-dog-name').value = p.myDog.name;
   $('my-dog-age').value = p.myDog.age ?? '';
   $('my-dog-name').onchange = $('my-dog-age').onchange = saveProfile;
-  $('birth-mode-note').textContent = BIRTH_MODES[p.birthMode].note;
+  $('home-country').replaceChildren(
+    ...[{ id: '', name: '나라 고르기' }, ...COUNTRIES].map((c) => {
+      const o = el('option', c.name);
+      o.value = c.id;
+      return o;
+    }),
+  );
+  $('home-country').value = p.homeCountry;
+  $('home-country').onchange = saveProfile;
+  showBirthMode(p);
   for (const k of Object.keys(LIFE_LENGTHS)) {
     const r = $('life-length-' + k);
     r.checked = k === p.lifeLength;
@@ -1444,6 +1479,10 @@ function renderBirth() {
       `이 나라의 반려견 · ${facts.owned}`,
       `이 나라에서 길·마을에 사는 개 · ${facts.freeRoaming}`,
     ];
+  if (life.birthMode === 'home')
+    world.push(
+      `이번 삶은 ${life.country.name} 안에서 현실 비율로 뽑혔습니다. 이 나라에서 이 출생 환경 ${pct(homeShares(life.country.id)[b.home])}`,
+    );
   if (life.birthMode === 'real')
     world.push(
       `이번 삶은 현실 비율로 뽑혔습니다. ${COUNTRIES.length}개 나라 중 이 나라 ${pct(countryShares(COUNTRIES)[life.country.id])} · 그 안에서 이 출생 환경 ${pct(homeShares(life.country.id)[b.home])}`,
