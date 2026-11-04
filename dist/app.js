@@ -78,6 +78,7 @@ import { developmentStage, speciesOf } from './species.js';
 import { LIFE_EVENTS } from './life-events.js';
 import { liveDaymates, daymateNews, daymateStatus, daymatePath, compareFive } from './daymates.js';
 import { focusYears } from './year-focus.js';
+import { lifeRarity } from './rarity.js';
 import {
   initNotes,
   dueMilestone,
@@ -1730,6 +1731,7 @@ function renderEnding() {
       el('p', `${data.deathDate} · ${data.place}`),
       el('p', `사인 · ${data.cause}`),
       el('p', data.last),
+      el('p', lifeRarity(life).headline, 'rarity-headline'),
     );
     grid.append(picture, text);
     area.append(grid);
@@ -1762,6 +1764,14 @@ function renderEnding() {
         list.append(li);
       }
       box.append(list);
+      area.append(box);
+    }
+    const rare = lifeRarity(life);
+    {
+      const box = el('div', null, 'compare rarity');
+      box.append(el('h3', `이 삶은 얼마나 드문가 · ${rare.headline}`));
+      for (const f of rare.factors) box.append(el('p', f.text), el('small', f.source));
+      box.append(el('small', rare.note, 'muted'));
       area.append(box);
     }
     const years = focusYears(life);
