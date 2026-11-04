@@ -83,6 +83,12 @@ test('no unexplained instant death in a sample of complete simulated lives', () 
       else advance(s, 100);
     }
     assert.ok(!s.cause.includes('사인은 모델링하지 않음'));
+    // A shelter stay can end in a recorded outcome (shelter-outcomes.js).
+    if (s.shelterStay?.outcome && s.home === 'shelter') {
+      assert.ok(['natural', 'euthanized'].includes(s.shelterStay.outcome));
+      assert.equal(s.log.at(-1).id, 'death');
+      continue;
+    }
     // A street pup's death has a recorded cause (street-survival.js), before adulthood only.
     if (s.streetPupCause) {
       assert.ok(s.day < s.reproduction.matureAt);

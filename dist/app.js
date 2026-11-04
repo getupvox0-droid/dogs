@@ -57,6 +57,7 @@ import { PARK_LIMITS } from './park.js';
 import { KIND_NAMES, companionAlbum, longestCompanion } from './album.js';
 import { traitsOf, shapingChoices } from './traits.js';
 import { browserCountry } from './home-country.js';
+import { shelterFact } from './shelter-outcomes.js';
 import { UK_REFERENCE } from './statistics.js';
 import { resolveChoice, playbackTick } from './playback.js';
 import { lookOf, imageFor, photoLogIndices, atlasFrame } from './visuals.js';
@@ -1488,6 +1489,8 @@ function renderBirth() {
       `이번 삶은 현실 비율로 뽑혔습니다. ${COUNTRIES.length}개 나라 중 이 나라 ${pct(countryShares(COUNTRIES)[life.country.id])} · 그 안에서 이 출생 환경 ${pct(homeShares(life.country.id)[b.home])}`,
     );
   if (facts.sources.length) world.push(`출처 · ${facts.sources.join(' · ')}`);
+  const rescue = shelterFact(life.country.id);
+  if (rescue) world.push(rescue);
   $('birth-world').replaceChildren(...world.map((t) => el('p', t)));
   $('birth-facts').replaceChildren();
   const parent = (p) =>
