@@ -19,8 +19,8 @@ function stayOutcome(seed, { appeal = 1, returnable = false, country = 'KR' } = 
   return s;
 }
 // Shelter stays end the way each country's published figures report (Korea 2024 survey,
-// US Shelter Animals Count 2024).
-for (const country of ['KR', 'US'])
+// US Shelter Animals Count 2024, Japan Ministry of the Environment FY2024).
+for (const country of ['KR', 'US', 'JP'])
   test(`${country} shelter outcomes follow the published shares`, () => {
     const n = 600,
       count = { adopted: 0, natural: 0, euthanized: 0, returned: 0 };
