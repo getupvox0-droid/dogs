@@ -29,6 +29,20 @@ export const SHELTER_OUTCOMES = {
     rescued: 5800000,
     dogShare: 0.5,
   },
+  // Dogs taken in by prefectures and cities, FY2024 (April 2024 – March 2025): 17,399 taken in;
+  // returned 6,630, rehomed 8,797, killed 1,964 = ① unsuitable for rehoming (illness,
+  // aggression) 1,459 + ② other 112 + ③ died after intake 393. ①+② are euthanasia here, ③ a
+  // death in care. Holding time is not published.
+  JP: {
+    year: 2024,
+    source:
+      '環境省, 犬・猫の引取り及び負傷動物等の収容並びに処分の状況 令和6年度 (개 인수 1만 7,399마리; 보호 기간은 게임용 가정)',
+    shares: { returned: 0.381, natural: 0.023, adopted: 0.506, euthanized: 0.09, inCare: 0 },
+    meanStayDays: 30,
+    stayAssumed: true,
+    rescued: 39409,
+    dogShare: 0.441,
+  },
 };
 // 106824 → '10만 7천', 5800000 → '580만'.
 function count(n) {
