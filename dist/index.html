@@ -325,6 +325,19 @@
               <p id="traits" class="muted"></p>
               <div id="marks" class="chips" aria-label="선택이 남긴 성격" hidden></div>
               <button id="reopen" class="primary" hidden>기다리는 선택 열기</button>
+              <form id="note-card" class="note-card" hidden>
+                <span class="eyebrow" id="note-label"></span>
+                <p id="note-moment" class="muted"></p>
+                <label for="note-text" id="note-prompt"></label>
+                <input id="note-text" maxlength="80" autocomplete="off" />
+                <div class="note-actions">
+                  <button type="submit" class="primary">한 줄 남기기</button
+                  ><button type="button" id="note-skip">그냥 지나가기</button
+                  ><button type="button" id="note-off" class="text-button">
+                    이번 삶에서는 묻지 않기
+                  </button>
+                </div>
+              </form>
               <div class="mode-control">
                 <label for="mode">함께하는 방식</label
                 ><select id="mode">

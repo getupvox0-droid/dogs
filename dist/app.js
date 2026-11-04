@@ -77,6 +77,16 @@ import { decisionUid, currentSituation, importantRecords, eventKind } from './de
 import { developmentStage, speciesOf } from './species.js';
 import { LIFE_EVENTS } from './life-events.js';
 import { liveDaymates, daymateNews, daymateStatus, daymatePath, compareFive } from './daymates.js';
+import {
+  initNotes,
+  dueMilestone,
+  answerMilestone,
+  stopAsking,
+  notesOf,
+  noteLabel,
+  FAREWELL,
+  NOTE_MAX,
+} from './milestones.js';
 const $ = (id) => document.getElementById(id),
   key = 'dogs-life-v1';
 let life = null,
@@ -626,6 +636,43 @@ function renderFive(area) {
     area.append(box);
   }
 }
+// A turning point waiting for the player's line (milestones.js). Time stops while it is open.
+let noteShown = null;
+function renderNoteCard() {
+  initNotes(life);
+  const due = viewingShared ? null : dueMilestone(life);
+  $('note-card').hidden = !due;
+  if (!due) {
+    noteShown = null;
+    return;
+  }
+  $('note-label').textContent = `${age(due.day)} · ${noteLabel(due.key)}`;
+  $('note-moment').textContent = due.moment;
+  $('note-prompt').textContent = due.prompt;
+  if (noteShown !== due.key) {
+    noteShown = due.key;
+    $('note-text').value = '';
+    running = false;
+    $('note-text').focus({ preventScroll: true });
+  }
+}
+function closeNote(text) {
+  const due = dueMilestone(life);
+  if (due) answerMilestone(life, due.key, text, due.day);
+  running = life.alive && simulationMode(life) !== 'direct';
+  nextBeatAt = performance.now() + 800;
+  save();
+  render();
+}
+$('note-card').onsubmit = (event) => {
+  event.preventDefault();
+  closeNote($('note-text').value);
+};
+$('note-skip').onclick = () => closeNote('');
+$('note-off').onclick = () => {
+  stopAsking(life);
+  closeNote('');
+};
 function render() {
   if (!life) return;
   initLifeState(life);
@@ -692,6 +739,7 @@ function render() {
   $('critical-alert').hidden = !alerts;
   $('critical-alert').textContent = alerts || '';
   renderMates();
+  renderNoteCard();
   $('recent').replaceChildren();
   for (const e of importantRecords(life)) {
     const li = el('li');
@@ -714,9 +762,14 @@ function render() {
     !life.alive ||
     (life.mode !== 'observe' && !!life.pending) ||
     !!life.presentation ||
-    !!life.chronicle.reading;
+    !!life.chronicle.reading ||
+    !$('note-card').hidden;
   $('next').disabled =
-    !life.alive || !!life.pending || !!life.presentation || !!life.chronicle.reading;
+    !life.alive ||
+    !!life.pending ||
+    !!life.presentation ||
+    !!life.chronicle.reading ||
+    !$('note-card').hidden;
   $('play-state').textContent =
     life.mode === 'observe' ? '관찰 모드' : life.pending ? '선택 대기' : '개입 모드';
   if (tab === 'timeline' || tab === 'dashboard') timeline();
@@ -1184,7 +1237,9 @@ function parkForm(kind) {
   for (const id of ['park-message', 'park-name', 'park-breed', 'park-born', 'park-departed'])
     $(id).value = '';
   $('park-message').maxLength = max;
-  $('park-count').textContent = `0 / ${max}`;
+  const farewell = fromLife && notesOf(life).find((n) => n.key === FAREWELL.key);
+  if (farewell) $('park-message').value = [...farewell.text].slice(0, max).join('');
+  $('park-count').textContent = `${[...$('park-message').value].length} / ${max}`;
 }
 function openPark(space = 'park', kind = null, order = 'recent') {
   running = false;
@@ -1312,6 +1367,7 @@ $('pause').onclick = () => {
 };
 $('next').onclick = () => {
   if (life.pending || life.presentation || life.chronicle.reading || !life.alive) return;
+  if (dueMilestone(life)) return;
   running = false;
   const beat = nextStoryBeat(life);
   nextBeatAt = performance.now() + beat.waitMs;
@@ -1487,6 +1543,7 @@ setInterval(() => {
     simulationMode(life) === 'direct' ||
     life.presentation ||
     life.chronicle.reading ||
+    (!viewingShared && dueMilestone(life)) ||
     replay ||
     readingPast ||
     (tab === 'timeline' && life.chronicle.preferences.pauseOnRecords) ||
@@ -1675,6 +1732,7 @@ function renderEnding() {
     );
     grid.append(picture, text);
     area.append(grid);
+    area.append(farewellBox());
   } else if (endingPage === 1) {
     const facts = el('dl', null, 'facts');
     for (const [k, v] of [
@@ -1700,6 +1758,19 @@ function renderEnding() {
       for (const c of shaped) {
         const li = el('li', null, 'shaping-' + c.kind);
         li.append(el('small', age(c.day)), el('strong', c.action), el('p', c.result));
+        list.append(li);
+      }
+      box.append(list);
+      area.append(box);
+    }
+    const notes = notesOf(life);
+    if (notes.length) {
+      const box = el('div', null, 'compare'),
+        list = el('ol', null, 'notes');
+      box.append(el('h3', '내가 건넨 말들'));
+      for (const n of notes) {
+        const li = el('li');
+        li.append(el('small', `${age(n.day)} · ${noteLabel(n.key)}`), el('p', n.text));
         list.append(li);
       }
       box.append(list);
@@ -1754,6 +1825,34 @@ function renderEnding() {
   $('ending-prev').disabled = endingPage === 0;
   $('ending-next').disabled = endingPage >= 3;
   $('ending-next').textContent = endingPage === 2 ? '작은 전기 읽기 ↗' : '다음 장면 ↗';
+}
+// The last line for the dog, on the ending's first page. Shared lives only show it.
+function farewellBox() {
+  const box = el('div', null, 'compare farewell'),
+    said = notesOf(life).find((n) => n.key === FAREWELL.key);
+  box.append(el('h3', '마지막 인사'));
+  if (said) {
+    box.append(el('p', said.text));
+    return box;
+  }
+  if (viewingShared) return el('div');
+  const form = el('form', null, 'note-card'),
+    input = el('input'),
+    send = el('button', '인사 남기기', 'primary');
+  input.maxLength = NOTE_MAX;
+  input.autocomplete = 'off';
+  input.setAttribute('aria-label', FAREWELL.prompt);
+  send.type = 'submit';
+  form.append(el('p', FAREWELL.prompt, 'muted'), input, send);
+  form.onsubmit = (event) => {
+    event.preventDefault();
+    initNotes(life);
+    if (!answerMilestone(life, FAREWELL.key, input.value, life.day)) return;
+    save();
+    renderEnding();
+  };
+  box.append(form);
+  return box;
 }
 function renderAlbum(area) {
   $('ending-title').textContent = '곁에 있던 존재들';

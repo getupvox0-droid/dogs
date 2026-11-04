@@ -1746,3 +1746,43 @@ details.note summary {
 .five p {
   margin: 4px 0;
 }
+/* One line for the dog at a turning point (milestones.js). */
+.note-card {
+  display: grid;
+  gap: 8px;
+  margin: 14px 0;
+  padding: 14px;
+  border: 1px solid var(--green);
+  border-radius: 10px;
+  background: var(--paper);
+}
+.note-card p {
+  margin: 0;
+}
+.note-card input {
+  font: inherit;
+  padding: 8px 10px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--bg);
+  color: var(--ink);
+}
+.note-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+}
+.notes {
+  list-style: none;
+  padding: 0;
+  display: grid;
+  gap: 10px;
+}
+.notes small {
+  color: var(--muted);
+}
+.notes p,
+.farewell p {
+  margin: 4px 0;
+}

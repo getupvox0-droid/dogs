@@ -32,6 +32,7 @@ import { initHealth, healthStep, healthChoice, validateHealth } from './health.j
 import { dailyMortality } from './statistics.js';
 import { streetPupStep } from './street-survival.js';
 import { shelterStep, validateShelterStay } from './shelter-outcomes.js';
+import { validateNotes } from './milestones.js';
 import {
   initWorld,
   initDevelopment,
@@ -769,6 +770,7 @@ export function restore(raw) {
   validateOpportunities(s);
   validateCrossroads(s);
   validateShelterStay(s);
+  validateNotes(s);
   initHealth(s);
   initStories(s);
   validateAppearance(s);
