@@ -1708,3 +1708,41 @@ details.note summary {
 .shaping .shaping-death {
   border-color: #b5651d;
 }
+/* Daymates: four dogs born the same day elsewhere. */
+.daymate-list li small {
+  display: block;
+  color: var(--muted);
+}
+.daymate-list li small.fact {
+  margin-top: 4px;
+  font-style: italic;
+}
+.daymate-list li.fresh {
+  border-top-color: var(--green);
+}
+.daymate-list li.fresh strong::after {
+  content: ' · 새 소식';
+  font-weight: 400;
+  font-size: 11px;
+  color: var(--green);
+}
+.five {
+  list-style: none;
+  padding: 0;
+  display: grid;
+  gap: 14px;
+}
+.five li {
+  border-top: 1px solid var(--line);
+  padding-top: 10px;
+}
+.five li.mine {
+  border-top: 2px solid var(--green);
+}
+.five li small {
+  display: block;
+  color: var(--muted);
+}
+.five p {
+  margin: 4px 0;
+}
