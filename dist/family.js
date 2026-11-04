@@ -1,4 +1,10 @@
 import { josa } from './korean.js';
+import {
+  CONCEIVE_PER_HEAT,
+  PUP_DAILY_DEATH,
+  STREET_REPRODUCTION,
+  litterSize,
+} from './reproduction-data.js';
 import { mix } from './world.js';
 // Biology ranges are referenced separately from authored probabilities.
 // Intimacy is a social bond, not proof of mating or monogamy. No human marriage model.
@@ -295,6 +301,52 @@ export function familyChoice(s, p, id, { log, remember }) {
   }
   return false;
 }
+// A street female in heat may be followed by several males; the father is not known.
+// Figures from reproduction-data.js; the litter cap is a game assumption.
+export function canConceiveAlone(s) {
+  initFamily(s);
+  const r = s.reproduction;
+  return (
+    s.alive &&
+    s.home === 'street' &&
+    s.sex === '암컷' &&
+    !r.neutered &&
+    s.day >= Math.max(240, r.matureAt) &&
+    s.day < 2920 &&
+    !s.medical.episode &&
+    s.health >= 55 &&
+    !s.story.lost &&
+    !r.pregnancy &&
+    r.litters.length < 4 &&
+    s.day >= r.nextConceptionAfter &&
+    r.heatUntil != null &&
+    s.day <= r.heatUntil
+  );
+}
+function conceiveAlone(s, { log, remember }) {
+  const r = s.reproduction;
+  if (familyRandom(s) >= CONCEIVE_PER_HEAT) {
+    r.nextConceptionAfter = r.heatUntil + 1;
+    return false;
+  }
+  r.pregnancy = {
+    carrier: 'self',
+    start: s.day,
+    due: s.day + 62 + Math.floor(familyRandom(s) * 3),
+    area: s.areaId,
+    companionId: null,
+    confirmed: false,
+    flags: {},
+  };
+  r.nextConceptionAfter = s.day + 365;
+  log(
+    s,
+    'reproduction-encounter',
+    '몸의 냄새가 달라진 며칠 동안 낯선 수컷들이 뒤를 따랐다. 그중 하나와 짝짓기가 있었다.',
+  );
+  remember(s, 'reproductive-encounter');
+  return true;
+}
 export function conceive(s, { log, remember }) {
   if (!canConceive(s)) return false;
   const r = s.reproduction,
@@ -330,13 +382,22 @@ export function conceive(s, { log, remember }) {
   remember(s, 'reproductive-encounter');
   return true;
 }
+// Street litters lose most pups (56% by three months); in a home or shelter few die.
+// The day is spread evenly over the first three months (game assumption).
+function pupFateDay(s) {
+  const share =
+    s.home === 'street'
+      ? STREET_REPRODUCTION.pupDeathBy3Months.value
+      : 1 - Math.pow(1 - PUP_DAILY_DEATH.cared, 90);
+  return familyRandom(s) < share ? s.day + 3 + Math.floor(familyRandom(s) * 87) : null;
+}
 function birth(s, api) {
   const { log, remember } = api,
     r = s.reproduction,
     p = r.pregnancy,
     c = r.companion,
     isMother = p.carrier === 'self';
-  const count = 1 + Math.floor(familyRandom(s) * 6),
+  const count = litterSize(() => familyRandom(s)),
     litter = {
       id: `litter-${r.litters.length + 1}`,
       birthDay: s.day,
@@ -368,6 +429,9 @@ function birth(s, api) {
       contacts: 1,
       lastContact: s.day,
       litterId: litter.id,
+      // Whether this pup dies before three months, and when (reproduction-data.js). Kept close
+      // by its mother at a crossroad, it may be spared (crossroads.js).
+      fateDay: pupFateDay(s),
       parentageKnown: isMother || !!c?.sharedHome,
       motherId: isMother ? s.lifeId : c?.id || null,
       fatherId: isMother ? (c?.sharedHome ? c.id : null) : s.lifeId,
@@ -440,6 +504,19 @@ function childrenStep(s, { log, remember, decision }) {
     }
     for (const child of kids) {
       if (!child.present) continue;
+      // Most street pups do not live to three months (reproduction-data.js, fateDay).
+      if (child.fateDay != null && s.day >= child.fateDay) {
+        child.present = false;
+        child.destination = '어린 날 헤어짐 · 행방을 알 수 없음';
+        child.reunionAt = null;
+        log(
+          s,
+          'child-lost',
+          `${josa(child.name, '이', '가')} 젖을 찾지 않았다. 차갑게 식은 작은 몸 곁에서 오래 냄새를 맡았다.`,
+        );
+        s.stress = clamp(s.stress + 6);
+        continue;
+      }
       if (child.lastContact !== s.day) {
         child.contacts++;
         child.lastContact = s.day;
@@ -790,6 +867,10 @@ export function familyStep(s, api) {
       conceive(s, api);
       return true;
     }
+  }
+  if (canConceiveAlone(s) && !r.used['cycle-' + r.cycleCount]) {
+    r.used['cycle-' + r.cycleCount] = true;
+    return conceiveAlone(s, api);
   }
   return false;
 }

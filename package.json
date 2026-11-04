@@ -7,7 +7,8 @@
     "build": "node scripts/restore-assets.mjs",
     "pretest": "node scripts/restore-assets.mjs",
     "start": "node scripts/restore-assets.mjs && python3 -m http.server 8000 --directory dist",
-    "format": "npx prettier@3.3.3 --write \"dist/*.{js,css,html}\" \"tests/*.mjs\" \"scripts/*.mjs\""
+    "format": "npx prettier@3.3.3 --write \"dist/*.{js,css,html}\" \"tests/*.mjs\" \"scripts/*.mjs\"",
+    "check:text": "node scripts/check-crossroad-text.mjs"
   },
   "engines": {
     "node": ">=22"
