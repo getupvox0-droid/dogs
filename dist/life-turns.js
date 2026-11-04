@@ -42,9 +42,11 @@ export const TURNS = {
     remember(s, 'new-guardian');
     return true;
   },
-  // Picked up while hurt and taken somewhere safe.
+  // Picked up while hurt and taken somewhere safe. A lost family dog can be picked up too; the
+  // shelter may then find its people (shelter-outcomes.js).
   rescued: (s, { log, remember }, text) => {
-    if (s.home !== 'street' || s.story?.lost) return false;
+    if (s.home !== 'street') return false;
+    leaveLost(s);
     toShelter(s, 'rescue', 'rescue-adoption');
     log(s, 'rescued-shelter', text);
     remember(s, 'rescued');
@@ -52,7 +54,8 @@ export const TURNS = {
   },
   // Caught by people clearing the street.
   caught: (s, { log, remember }, text) => {
-    if (s.home !== 'street' || s.story?.lost) return false;
+    if (s.home !== 'street') return false;
+    leaveLost(s);
     toShelter(s, 'caught', 'shelter-adoption');
     log(s, 'caught-shelter', text);
     remember(s, 'caught');
@@ -93,7 +96,41 @@ export const TURNS = {
     remember(s, 'escaped');
     return true;
   },
+  // Adopted out of a shelter (shelter-outcomes.js).
+  adopted: (s, { log, remember }, text) => {
+    if (s.home !== 'shelter') return false;
+    s.home = 'family';
+    changeArea(s, 'adoption');
+    syncContext(s);
+    s.adoptionRoute = 'shelter-adoption';
+    s.caregiverId = 'carer-adopt-' + s.areaSerial;
+    if (s.environmentModel) s.environmentModel.facility = 'home';
+    s.familyBond = 30;
+    s.story.settleAt = s.day + 14;
+    log(s, 'adopt', text);
+    remember(s, 'new-home');
+    return true;
+  },
+  // Found by its own people at the shelter.
+  returned: (s, { log, remember }, text) => {
+    if (s.home !== 'shelter') return false;
+    s.home = 'family';
+    changeArea(s, 'returned');
+    syncContext(s);
+    s.caregiverId = s.caregiverId?.startsWith('carer') ? s.caregiverId : 'carer-initial';
+    if (s.environmentModel) s.environmentModel.facility = 'home';
+    s.story.reunited = true;
+    s.story.returnHome = null;
+    log(s, 'reunion', text);
+    remember(s, 'reunion');
+    return true;
+  },
 };
+// A lost dog that ends up in a shelter is no longer wandering; whether it was looked for is kept.
+function leaveLost(s) {
+  if (!s.story?.lost) return;
+  s.story.lost = false;
+}
 function toShelter(s, reason, route) {
   s.home = 'shelter';
   changeArea(s, reason);

@@ -31,6 +31,7 @@ import { encounterScene, resolveEncounter } from './encounters.js';
 import { initHealth, healthStep, healthChoice, validateHealth } from './health.js';
 import { dailyMortality } from './statistics.js';
 import { streetPupStep } from './street-survival.js';
+import { shelterStep, validateShelterStay } from './shelter-outcomes.js';
 import {
   initWorld,
   initDevelopment,
@@ -265,6 +266,7 @@ export function createLife(seed = Date.now(), lifeId = null, options = {}) {
   validateThreads(s);
   validateOpportunities(s);
   validateCrossroads(s);
+  validateShelterStay(s);
   initHealth(s);
   initStories(s);
   validateAppearance(s);
@@ -581,6 +583,8 @@ function step(s) {
   const medicalBusy = healthStep(s, { log, random: medicalRandom, decision }, dailyMortality(s));
   // A street pup's daily danger (street-survival.js): most do not reach adulthood.
   if (s.alive && !s.pending) streetPupStep(s, { log });
+  // A stay in a shelter of a country with published outcomes (shelter-outcomes.js).
+  if (s.alive && !s.pending) shelterStep(s, { log, remember });
   if (!s.alive) {
     if (s.chronicle) s.chronicle.phase = 'ending';
     return;
@@ -764,6 +768,7 @@ export function restore(raw) {
   validateThreads(s);
   validateOpportunities(s);
   validateCrossroads(s);
+  validateShelterStay(s);
   initHealth(s);
   initStories(s);
   validateAppearance(s);

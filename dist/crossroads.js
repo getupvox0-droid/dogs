@@ -16,6 +16,7 @@ import {
 } from './crossroad-parts.js';
 import { applyTurn } from './life-turns.js';
 import { bondFromScent } from './family.js';
+import { shelterData, shelterKnow } from './shelter-outcomes.js';
 
 const YEAR = 365;
 const has = (s, mark) => s.crossroads?.marks.includes(mark);
@@ -38,6 +39,7 @@ const o = (
     pup = null,
     bond = false,
     owe = null,
+    appeal = null,
   } = {},
 ) => ({
   weight: typeof weight === 'function' ? weight : () => weight,
@@ -54,6 +56,8 @@ const o = (
   bond,
   // owe: someone this dog helped or was kind to may come back later (echoes below).
   owe,
+  // appeal: how this shelter stay's adoption chance changes (shelter-outcomes.js).
+  appeal,
 });
 // The records written when a crossroad turns a life.
 const TURN_TEXT = {
@@ -836,6 +840,47 @@ CROSSROADS.push(
     ],
   },
 );
+// A visitor at a shelter with published outcomes: how the dog meets them changes its chances.
+CROSSROADS.push({
+  id: 'shelter-visitor',
+  urgent: true,
+  from: 60,
+  to: 25 * YEAR,
+  ok: (s) =>
+    s.home === 'shelter' && !!shelterData(s) && !!s.shelterStay && s.day < s.shelterStay.due,
+  text: () =>
+    '철문이 늘어선 복도에 낯선 사람이 천천히 걷는다. 칸마다 멈춰 서서 안을 들여다본다. 내 칸 앞에서 걸음이 느려진다.',
+  know: (s) => shelterKnow(s),
+  options: [
+    {
+      id: 'greet',
+      text: '철문 앞으로 나가 꼬리를 흔든다',
+      outcomes: [
+        o(70, '사람이 쪼그려 앉아 철문 사이로 손을 넣었다. 손 냄새를 오래 맡았다.', {
+          appeal: 1.7,
+          delta: { trust: 4 },
+          mark: 'trusting',
+        }),
+        o(30, '꼬리를 흔들었지만 사람은 다음 칸으로 갔다.', { appeal: 1.2 }),
+      ],
+    },
+    {
+      id: 'sit',
+      text: '철문 가까이 앉아 사람을 바라본다',
+      outcomes: [o(100, '사람이 한참 나를 바라보다가 이름표를 읽었다.', { appeal: 1.3 })],
+    },
+    {
+      id: 'hide',
+      text: '구석 담요 속으로 몸을 숨긴다',
+      outcomes: [
+        o(100, '담요 냄새 속에서 숨을 죽였다. 발소리가 다음 칸으로 멀어졌다.', {
+          appeal: 0.6,
+          mark: 'patient',
+        }),
+      ],
+    },
+  ],
+});
 // What happens among the people a dog lives with, and the moment it meets the dog.
 // Each of these happens in only some homes: a life meets one or two, not all of them.
 const family = (s) => s.home === 'family' && !s.story?.lost;
@@ -1355,7 +1400,7 @@ export function crossroadStep(s, { decision }) {
   const state = initCrossroads(s);
   if (s.pending) return false;
   // A litter only stays small for a few weeks: its moments come as soon as they can.
-  const urgent = CROSSROADS.filter((c) => c.id.startsWith('den-') && eligible(s, c));
+  const urgent = CROSSROADS.filter((c) => (c.urgent || c.id.startsWith('den-')) && eligible(s, c));
   let pool = urgent.length ? urgent : null;
   if (!pool && s.day < state.next) return generatedStep(s, state, decision);
   pool ??= CROSSROADS.filter((c) => eligible(s, c));
@@ -1375,7 +1420,7 @@ export function crossroadStep(s, { decision }) {
     )
   )
     return false;
-  s.pending.know = c.know;
+  s.pending.know = typeof c.know === 'function' ? c.know(s) : c.know;
   state.seen.push(c.id);
   const gap = mix(s.seed + s.day, 2712);
   state.next = s.day + (s.day < 60 ? 45 : s.day < 2 * YEAR ? 60 + (gap % 90) : 180 + (gap % 240));
@@ -1426,6 +1471,7 @@ export function crossroadChoice(s, p, id, { log, remember }) {
   state.history.push({ id: c.id, day: s.day, option: id, outcome: option.outcomes.indexOf(out) });
   remember(s, `crossroad:${c.id}:${id}`);
   if (out.owe && !state.debts.includes(out.owe)) state.debts.push(out.owe);
+  if (out.appeal && s.shelterStay) s.shelterStay.appeal *= out.appeal;
   if (out.bond) bondFromScent(s);
   if (out.pup) litterOutcome(s, out.pup, log);
   if (out.hurt) beginIllness(s, { log, random: () => 0 }, out.illness || 'injury', out.hurt);

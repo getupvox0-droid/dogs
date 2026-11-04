@@ -30,9 +30,10 @@ const live = (seed, pick) => {
 };
 
 test('every crossroad has player-only knowledge, 2–3 options and a safe way out', () => {
-  assert.equal(CROSSROADS.length, 21);
+  assert.equal(CROSSROADS.length, 22);
   for (const c of CROSSROADS) {
-    assert.ok(c.know.length > 10, c.id);
+    const know = typeof c.know === 'function' ? c.know({ country: { id: 'KR' } }) : c.know;
+    assert.ok(know.length > 10, c.id);
     assert.ok(c.options.length >= 2 && c.options.length <= 3, c.id);
     // The last option never kills: a careful dog can always step back.
     assert.ok(
@@ -94,7 +95,7 @@ test('a life with crossroads replays from its share link, and old links are refu
     again.log.map((e) => [e.day, e.id, e.text]),
     s.log.map((e) => [e.day, e.id, e.text]),
   );
-  const old = encodeLife(s).replace(/^v11./, 'v10.');
+  const old = encodeLife(s).replace(/^v12./, 'v11.');
   assert.throws(() => decodeLife(old));
 });
 
