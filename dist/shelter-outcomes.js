@@ -15,7 +15,28 @@ export const SHELTER_OUTCOMES = {
     rescued: 106824,
     dogShare: 0.724,
   },
+  // Dogs only. Outcomes in 2024 (millions): adopted 2.0, other live outcomes 0.6 (live community
+  // outcomes 2.6 minus adoptions; mostly returns to owner), euthanised 0.334, transferred to
+  // another shelter 0.524 (here: the stay goes on). Died or lost in care is not split by species
+  // (0.141 for dogs and cats together); half is assumed for dogs. Total ≈ 3.53.
+  US: {
+    year: 2024,
+    source:
+      'Shelter Animals Count, 2024 Annual Analysis (개 보호소 입소 290만 마리; 보호 중 사망의 개 몫과 보호 기간은 게임용 가정)',
+    shares: { returned: 0.17, natural: 0.02, adopted: 0.567, euthanized: 0.095, inCare: 0.148 },
+    meanStayDays: 30,
+    stayAssumed: true,
+    rescued: 5800000,
+    dogShare: 0.5,
+  },
 };
+// 106824 → '10만 7천', 5800000 → '580만'.
+function count(n) {
+  const man = Math.floor(n / 10000),
+    chun = Math.round((n % 10000) / 1000);
+  if (!man) return `${Math.round(n / 1000)}천`;
+  return chun && man < 100 ? `${man}만 ${chun}천` : `${Math.round(n / 10000)}만`;
+}
 const roll = (s, salt) => (mix(s.seed + s.day, salt) % 1000000) / 1000000;
 // Stay length: spread around the published mean (game assumption on the shape).
 function stayDays(s, mean) {
@@ -108,14 +129,17 @@ export function shelterFact(countryId) {
   const d = SHELTER_OUTCOMES[countryId];
   if (!d) return null;
   const p = (x) => `${Math.round(x * 1000) / 10}%`;
-  return `이 나라에서 한 해 구조되는 동물 · 약 ${Math.round(d.rescued / 1000)}천 마리 (개 ${p(d.dogShare)}) · 입양 ${p(d.shares.adopted)} · 자연사 ${p(d.shares.natural)} · 인도적 처리 ${p(d.shares.euthanized)} · 주인 반환 ${p(d.shares.returned)} (${d.source})`;
+  return `이 나라에서 한 해 보호소에 들어오는 동물 · 약 ${count(d.rescued)} 마리 (개 ${p(d.dogShare)}) · 입양 ${p(d.shares.adopted)} · 보호 중 사망 ${p(d.shares.natural)} · 인도적 처리 ${p(d.shares.euthanized)} · 주인 반환 ${p(d.shares.returned)} (${d.source})`;
 }
 // What the player sees at the shelter crossroad (crossroads.js).
 export function shelterKnow(s) {
   const d = shelterData(s);
   if (!d) return '';
   const p = (x) => `${Math.round(x * 1000) / 10}%`;
-  return `이 나라의 동물보호센터에 들어온 동물은 평균 ${Math.round(d.meanStayDays)}일 보호됩니다. ${d.year}년에는 ${p(d.shares.adopted)}가 입양되고, ${p(d.shares.natural)}가 자연사하고, ${p(d.shares.euthanized)}가 인도적 처리되었습니다. (${d.source})`;
+  const stay = d.stayAssumed
+    ? '평균 보호 기간은 공개된 자료가 없어 게임에서는 약 한 달로 둡니다.'
+    : `이 나라의 동물보호센터에 들어온 동물은 평균 ${Math.round(d.meanStayDays)}일 보호됩니다.`;
+  return `${stay} ${d.year}년에는 ${p(d.shares.adopted)}가 입양되고, ${p(d.shares.natural)}가 보호 중 숨지고, ${p(d.shares.euthanized)}가 인도적 처리되었습니다. (${d.source})`;
 }
 export function validateShelterStay(s) {
   const t = s.shelterStay;
