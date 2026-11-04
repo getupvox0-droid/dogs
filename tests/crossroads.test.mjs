@@ -30,7 +30,7 @@ const live = (seed, pick) => {
 };
 
 test('every crossroad has player-only knowledge, 2–3 options and a safe way out', () => {
-  assert.equal(CROSSROADS.length, 12);
+  assert.equal(CROSSROADS.length, 21);
   for (const c of CROSSROADS) {
     assert.ok(c.know.length > 10, c.id);
     assert.ok(c.options.length >= 2 && c.options.length <= 3, c.id);
@@ -94,7 +94,7 @@ test('a life with crossroads replays from its share link, and old links are refu
     again.log.map((e) => [e.day, e.id, e.text]),
     s.log.map((e) => [e.day, e.id, e.text]),
   );
-  const old = encodeLife(s).replace(/^v7./, 'v6.');
+  const old = encodeLife(s).replace(/^v8./, 'v7.');
   assert.throws(() => decodeLife(old));
 });
 
@@ -331,4 +331,72 @@ test('country places only appear in their country, and the companion moment is c
     }
     assert.ok(buddy <= 3, `buddy ${buddy}`);
   }
+});
+
+test('litter crossroads keep or lose the young, and people events can move a dog', async () => {
+  const { crossroadChoice, CROSSROADS: ALL } = await import('../dist/crossroads.js');
+  const { applyTurn } = await import('../dist/life-turns.js');
+  const ctx = {
+    log: (s, id, text) => s.log.push({ day: s.day, id, text }),
+    remember: (s, id) => s.memories.push(id),
+  };
+  const s = createLife(55, null, { birthMode: 'explore' });
+  s.day = 900;
+  s.home = 'family';
+  s.reproduction.litters.push({ id: 'litter-1', parentRole: 'mother', birthDay: 880 });
+  for (let i = 0; i < 3; i++)
+    s.reproduction.children.push({
+      id: 'c' + i,
+      name: `새끼 ${i}`,
+      present: true,
+      birthDay: 880,
+      bond: 20,
+      departAt: 960,
+    });
+  const stairs = ALL.find((c) => c.id === 'den-stairs');
+  assert.ok(stairs.ok(s));
+  // Force the losing outcome by trying serials until it comes up.
+  let lost = false;
+  for (let serial = 0; serial < 200 && !lost; serial++) {
+    const t = structuredClone(s);
+    t.decisionSerial = serial;
+    crossroadChoice(t, { id: 'crossroad:den-stairs' }, 'bark', ctx);
+    lost = t.log.some((e) => e.id === 'child-lost');
+    if (lost) assert.equal(t.reproduction.children.filter((k) => k.present).length, 2);
+  }
+  assert.ok(lost);
+  const home = createLife(56);
+  home.home = 'family';
+  assert.ok(applyTurn(home, ['surrendered', '맡겨졌다'], ctx));
+  assert.equal(home.home, 'shelter');
+  const moved = createLife(57);
+  moved.home = 'family';
+  const area = moved.areaId;
+  assert.ok(applyTurn(moved, ['rehomed', '따라갔다'], ctx));
+  assert.equal(moved.home, 'family');
+  assert.notEqual(moved.areaId, area);
+  assert.equal(moved.log.at(-1).id, 'guardian-changed');
+});
+
+test('a dog it once shielded can come back and turn a fatal moment into a wound', async () => {
+  const { crossroadChoice } = await import('../dist/crossroads.js');
+  const ctx = {
+    log: (s, id, text) => s.log.push({ day: s.day, id, text }),
+    remember: (s, id) => s.memories.push(id),
+  };
+  let saved = 0;
+  for (let serial = 0; serial < 400; serial++) {
+    const s = createLife(58);
+    s.day = 900;
+    s.home = 'street';
+    s.decisionSerial = serial;
+    s.crossroads.debts = ['buddy'];
+    crossroadChoice(s, { id: 'crossroad:road-smell' }, 'dash', ctx);
+    if (s.log.some((e) => /그때 앞을 막아 주었던 개/.test(e.text))) {
+      saved++;
+      assert.ok(s.alive);
+      assert.deepEqual(s.crossroads.debts, []);
+    }
+  }
+  assert.ok(saved > 0);
 });

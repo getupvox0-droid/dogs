@@ -22,6 +22,26 @@ export const TURNS = {
     remember(s, 'new-home');
     return true;
   },
+  // A family gave the dog up to a shelter.
+  surrendered: (s, { log, remember }, text) => {
+    if (s.home !== 'family' || s.story?.lost) return false;
+    toShelter(s, 'surrendered', 'shelter-adoption');
+    log(s, 'shelter-return', text);
+    remember(s, 'surrendered');
+    return true;
+  },
+  // The dog went on with one of its people to a new home.
+  rehomed: (s, { log, remember }, text) => {
+    if (s.home !== 'family' || s.story?.lost) return false;
+    changeArea(s, 'guardian-change');
+    syncContext(s);
+    s.caregiverId = 'guardian-' + s.areaId;
+    s.familyBond = Math.max(20, s.familyBond - 15);
+    s.story.settleAt = s.day + 14;
+    log(s, 'guardian-changed', text);
+    remember(s, 'new-guardian');
+    return true;
+  },
   // Picked up while hurt and taken somewhere safe.
   rescued: (s, { log, remember }, text) => {
     if (s.home !== 'street' || s.story?.lost) return false;
