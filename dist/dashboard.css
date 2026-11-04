@@ -1786,3 +1786,13 @@ details.note summary {
 .farewell p {
   margin: 4px 0;
 }
+/* How rare this life was (rarity.js). */
+.rarity-headline {
+  color: var(--green);
+  font-weight: 700;
+}
+.rarity small {
+  display: block;
+  color: var(--muted);
+  margin-bottom: 6px;
+}

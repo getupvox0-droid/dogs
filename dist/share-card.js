@@ -1,5 +1,6 @@
 import { visualFor, diagramSvg } from './visuals.js';
 import { endingData, ageText, dayDate } from './chronicle.js';
+import { lifeRarity } from './rarity.js';
 // Story-sized life card (9:16). Every line comes from the life's own records.
 export const CARD = { width: 1080, height: 1920 };
 // Rarer turns of a life come first; each kind of moment is used once (its first occurrence).
@@ -123,12 +124,16 @@ export async function drawLifeCard(canvas, s) {
     c.fillText(line, M, y);
     y += 46;
   }
-  y += 40;
   c.fillStyle = '#385d45';
+  c.font = 'bold 34px sans-serif';
+  c.fillText(lifeRarity(s).headline, M, y + 8);
+  y += 80;
   c.font = 'bold 28px sans-serif';
   c.fillText('가장 중요한 순간', M, y);
   y += 56;
   for (const e of keyMoments(s)) {
+    // Leave room for the last line and the footer.
+    if (y > 1540) break;
     c.fillStyle = '#73796f';
     c.font = '24px sans-serif';
     c.fillText(ageText(e.day), M, y);
