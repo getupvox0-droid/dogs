@@ -77,6 +77,7 @@ import { decisionUid, currentSituation, importantRecords, eventKind } from './de
 import { developmentStage, speciesOf } from './species.js';
 import { LIFE_EVENTS } from './life-events.js';
 import { liveDaymates, daymateNews, daymateStatus, daymatePath, compareFive } from './daymates.js';
+import { focusYears } from './year-focus.js';
 import {
   initNotes,
   dueMilestone,
@@ -1758,6 +1759,19 @@ function renderEnding() {
       for (const c of shaped) {
         const li = el('li', null, 'shaping-' + c.kind);
         li.append(el('small', age(c.day)), el('strong', c.action), el('p', c.result));
+        list.append(li);
+      }
+      box.append(list);
+      area.append(box);
+    }
+    const years = focusYears(life);
+    if (years.length) {
+      const box = el('div', null, 'compare'),
+        list = el('ol', null, 'notes');
+      box.append(el('h3', '해마다 고른 방향'));
+      for (const y of years) {
+        const li = el('li');
+        li.append(el('small', `${age(y.start)} ~ ${age(y.end)}`), el('p', y.text));
         list.append(li);
       }
       box.append(list);

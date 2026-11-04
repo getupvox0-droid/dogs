@@ -95,7 +95,7 @@ test('a life with crossroads replays from its share link, and old links are refu
     again.log.map((e) => [e.day, e.id, e.text]),
     s.log.map((e) => [e.day, e.id, e.text]),
   );
-  const old = encodeLife(s).replace(/^v12./, 'v11.');
+  const old = encodeLife(s).replace(/^v13./, 'v12.');
   assert.throws(() => decodeLife(old));
 });
 

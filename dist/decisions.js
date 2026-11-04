@@ -48,7 +48,7 @@ export function eventKind(id) {
     return /pregnancy|litter-born|child-departure|neuter/.test(id) ? '전환' : '관계';
   if (/dog|friend|relationship|encounter/.test(id)) return '관계';
   if (/world|household|resource/.test(id)) return '환경';
-  if (id === 'decision' || id === 'choice' || id === 'decision-outcome') return '선택';
+  if (['decision', 'choice', 'decision-outcome', 'year-review'].includes(id)) return '선택';
   return '일상';
 }
 export function importantRecords(s) {

@@ -33,6 +33,7 @@ import { dailyMortality } from './statistics.js';
 import { streetPupStep } from './street-survival.js';
 import { shelterStep, validateShelterStay } from './shelter-outcomes.js';
 import { validateNotes } from './milestones.js';
+import { yearFocusStep, yearFocusChoice, yearFocusDaily, validateFocus } from './year-focus.js';
 import {
   initWorld,
   initDevelopment,
@@ -317,6 +318,7 @@ export function choose(s, id, expectedUid = null, { auto = false } = {}) {
   log(s, 'choice', p.options.find((o) => o.id === id).text);
   opportunityChoice(s, p, id, { log, remember });
   crossroadChoice(s, p, id, { log, remember });
+  yearFocusChoice(s, p, id);
   threadChoice(s, p, id, { log, remember });
   familyChoice(s, p, id, { log, remember });
   clinicalChoice(s, p, id, { log });
@@ -493,6 +495,7 @@ function step(s) {
   initLifeEvents(s);
   initWorld(s);
   s.day++;
+  yearFocusDaily(s);
   growth(s, log, remember);
   const review = s.story.adoptionReview;
   if (review && s.day >= review.day) {
@@ -605,8 +608,16 @@ function step(s) {
     if (s.day >= 2920) log(s, 'aging', '쉬었다 가는 시간이 길어졌다. 편한 자리를 먼저 찾는다.');
   }
   // Crossroads come before routine situations: they are rarer and can change the rest of a life.
+  // The year's direction comes first on the day it is due (year-focus.js).
+  const focusBusy =
+    !threadBusy && !storyBusy && !richBusy && !s.pending && yearFocusStep(s, { decision, log });
   const crossroadBusy =
-    !threadBusy && !storyBusy && !richBusy && !s.pending && crossroadStep(s, { decision });
+    !focusBusy &&
+    !threadBusy &&
+    !storyBusy &&
+    !richBusy &&
+    !s.pending &&
+    crossroadStep(s, { decision });
   const opportunityBusy =
     !crossroadBusy &&
     !threadBusy &&
@@ -720,6 +731,7 @@ export function restore(raw) {
           'lost-help',
           'alone',
           'care-change',
+          'year-focus',
         ].includes(s.pending.id) ||
           validOpportunity(s.pending.id) ||
           validCrossroad(s.pending.id) ||
@@ -771,6 +783,7 @@ export function restore(raw) {
   validateCrossroads(s);
   validateShelterStay(s);
   validateNotes(s);
+  validateFocus(s);
   initHealth(s);
   initStories(s);
   validateAppearance(s);
