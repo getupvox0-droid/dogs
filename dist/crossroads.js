@@ -1440,8 +1440,14 @@ export function crossroadStep(s, { decision }) {
   return true;
 }
 // Picks an outcome by weight with a hash of the seed and decision, so a replay draws the same one.
+// A dog that lives with people is taken to a vet and watched more closely: an outcome that
+// kills on the street more often ends as a wound at home (game assumption, toward the UK figure
+// that accidents are a small share of owned-dog deaths, end-of-life.js).
+const homeDieScale = (s) => (s.home === 'family' && !s.story?.lost ? 0.35 : 1);
 export function pickOutcome(s, option) {
-  const weights = option.outcomes.map((x) => Math.max(0, x.weight(s)));
+  const weights = option.outcomes.map(
+    (x) => Math.max(0, x.weight(s)) * (x.die ? homeDieScale(s) : 1),
+  );
   const total = weights.reduce((a, b) => a + b, 0);
   let roll = ((mix(s.seed + s.day, (s.decisionSerial || 0) + 2713) % 10000) / 10000) * total;
   for (let i = 0; i < weights.length; i++) {

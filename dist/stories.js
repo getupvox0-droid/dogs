@@ -93,7 +93,9 @@ export function storyChoice(s, p, id, log, remember, clamp, random) {
   }
   if (p.id === 'lost-help') {
     s.story.searches = (s.story.searches || 0) + 1;
-    if (random(s) < (id === 'wait' ? 0.7 : 0.2)) {
+    // Most lost dogs are found: 93% in a US survey (Weiss et al. 2012, Animals 2:301). Staying
+    // where it was lost helps more than roaming (game assumption on the split).
+    if (random(s) < (id === 'wait' ? 0.7 : 0.35)) {
       s.home = s.story.returnHome || 'family';
       if (s.story.returnArea) {
         s.areaId = s.story.returnArea;

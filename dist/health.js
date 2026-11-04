@@ -1,7 +1,15 @@
 import { euro } from './korean.js';
 import { clinicalAccess, clinicVisit } from './people-world.js';
-// Narrative game model. Episode frequencies, causes and outcomes are authored,
-// not inferred cause-specific medical statistics or calibrated survival estimates.
+import { mix } from './world.js';
+import { endCause, endDuration, END_SOURCE } from './end-of-life.js';
+// Two kinds of episode. Everyday illnesses and injuries come and mostly heal (authored, not
+// calibrated). A last illness begins with the life table's daily hazard and its cause follows
+// the VetCompass shares (end-of-life.js); it does not heal.
+// Fitted so that all deaths together (accidents, the street, last illnesses) follow the UK
+// life table for family dogs (game calibration; see scripts/measure-lifespan.mjs).
+export const END_HAZARD_FIT = 0.8;
+// The seed is mixed first so that lives with nearby seeds do not share their unlucky days.
+const dayMix = (s, salt) => mix(mix(s.seed, salt) + s.day, salt);
 export function initHealth(s) {
   if (!s.medical) s.medical = { episode: null, history: [], nextEligible: 0 };
 }
@@ -33,6 +41,43 @@ const TYPES = {
     diagnosis:
       '진료실에서 아픈 다리를 살핀다. 상처를 처치받고 움직임을 줄여야 하는 시간이 시작된다.',
   },
+  cancer: {
+    cause: '종양',
+    symptom: '몸 한쪽에 단단한 덩어리가 만져진다. 먹는 양이 줄고 쉽게 지친다.',
+    diagnosis: '진료실에서 덩어리를 살피고 검사를 받는다. 쉽게 낫지 않는 종양이라는 말이 오간다.',
+  },
+  joint: {
+    cause: '관절·척추 질환',
+    symptom: '뒷다리에 힘이 들어가지 않는다. 일어서다 주저앉고, 계단 앞에서 오래 머뭇거린다.',
+    diagnosis:
+      '진료실에서 다리와 허리를 살핀다. 통증을 줄이는 약과 움직임을 줄이는 돌봄이 시작된다.',
+  },
+  brain: {
+    cause: '뇌 질환',
+    symptom: '갑자기 몸이 굳고 떨렸다. 정신이 돌아온 뒤에도 한동안 멍하니 벽을 바라본다.',
+    diagnosis: '진료실에서 발작을 살피는 검사를 받는다. 발작을 줄이는 약이 시작된다.',
+  },
+  behaviour: {
+    cause: '공격성 등 행동 문제',
+    symptom:
+      '다가오는 손에 이를 드러내고, 가족에게도 으르렁거리는 날이 늘었다. 집 안의 긴장이 날마다 커진다.',
+    diagnosis: '진료실에서 행동 상담을 받는다. 함께 지내기 위한 훈련과 약이 시작된다.',
+  },
+  heart: {
+    cause: '심장병',
+    symptom: '조금만 걸어도 숨이 가빠진다. 밤이면 마른기침에 잠을 깬다.',
+    diagnosis: '진료실에서 가슴 소리를 오래 듣는다. 심장을 돕는 약을 날마다 먹게 된다.',
+  },
+  kidney: {
+    cause: '신장 질환',
+    symptom: '물그릇 앞에 자꾸 간다. 소변이 잦아지고 입에서 낯선 냄새가 난다.',
+    diagnosis: '진료실에서 피와 소변을 검사한다. 신장을 돕는 밥과 수액이 시작된다.',
+  },
+  trauma: {
+    cause: '사고로 인한 큰 외상',
+    symptom: '무언가에 세게 부딪혔다. 몸을 일으키지 못한 채 낮은 소리만 낸다.',
+    diagnosis: '진료실에서 다친 곳을 처치받는다. 상처가 깊어 오래 지켜봐야 한다.',
+  },
   decline: {
     cause: '노년기 전신 쇠약',
     symptom: '쉬어도 기운이 잘 돌아오지 않는다. 먹는 양이 줄고 일어서는 시간이 길어진다.',
@@ -40,15 +85,13 @@ const TYPES = {
   },
 };
 // `symptom` lets a scene describe how this episode began (a crossroad's fall or bite).
-export function beginIllness(s, { log, random }, kind = null, symptom = null) {
+export function beginIllness(s, { log, random }, kind = null, symptom = null, terminal = false) {
   initHealth(s);
   if (s.medical.episode) return;
   const types =
-    s.day >= 3650
-      ? ['decline', 'digestive', 'respiratory']
-      : s.day >= 90 && s.home === 'street'
-        ? ['injury', 'digestive', 'respiratory']
-        : ['digestive', 'respiratory'];
+    s.day >= 90 && s.home === 'street'
+      ? ['injury', 'digestive', 'respiratory']
+      : ['digestive', 'respiratory'];
   kind = kind || types[Math.floor(random(s) * types.length)];
   const e = (s.medical.episode = {
     kind,
@@ -59,6 +102,12 @@ export function beginIllness(s, { log, random }, kind = null, symptom = null) {
     baseline: s.health,
     critical: false,
   });
+  if (terminal) {
+    e.terminal = true;
+    // At least ten days from the first sign to the end; never past the 20-year limit.
+    const days = Math.max(10, 5 + endDuration(kind, (dayMix(s, 2902) % 1000) / 1000));
+    e.due = Math.min(s.day + days, Math.max(s.day + 10, 7299));
+  }
   s.health = Math.max(5, s.health - 18);
   log(s, 'illness-onset', symptom || TYPES[e.kind].symptom);
 }
@@ -80,8 +129,16 @@ export function healthStep(s, { log, random, decision }, risk) {
   initHealth(s);
   let e = s.medical.episode;
   if (!e) {
+    // A last illness: the life table's hazard for this age. A street pup's first months are
+    // modelled in street-survival.js instead.
+    const pup = s.home === 'street' && s.day < (s.reproduction?.matureAt ?? 240),
+      roll = (dayMix(s, 2901) % 1000000) / 1000000;
+    if (s.day >= 7280 || (!pup && roll < risk * END_HAZARD_FIT)) {
+      const kind = s.day >= 7280 ? 'decline' : endCause(s, (dayMix(s, 2903) % 1000) / 1000);
+      beginIllness(s, { log, random }, kind, null, true);
+      return true;
+    }
     if (
-      s.day >= 7280 ||
       s.needs?.strain >= 3 ||
       (s.day >= s.medical.nextEligible &&
         random(s) < Math.min(0.1, risk * 3 * (s.health < 40 ? 1.5 : 1)))
@@ -89,13 +146,7 @@ export function healthStep(s, { log, random, decision }, risk) {
       beginIllness(
         s,
         { log, random },
-        s.day >= 7280
-          ? 'decline'
-          : s.needs?.strain >= 3
-            ? s.needs.thirst > 85
-              ? 'dehydration'
-              : 'nutrition'
-            : null,
+        s.needs?.strain >= 3 ? (s.needs.thirst > 85 ? 'dehydration' : 'nutrition') : null,
       );
       return true;
     }
@@ -151,9 +202,26 @@ export function healthStep(s, { log, random, decision }, risk) {
       );
     return true;
   }
+  if (e.terminal) return lastIllnessStep(s, e, elapsed, log);
   if (elapsed >= 5 && e.stage === 'care') {
-    const recoverChance = e.treated ? 0.88 : e.supported ? 0.65 : 0.4;
-    e.recovering = s.day < 7280 && random(s) < recoverChance;
+    // Everyday illnesses and injuries mostly heal with care (game assumption).
+    // A wound heals more often than an illness, and a dog living with people is usually
+    // noticed limping in the end even if no one took it to a vet.
+    const recoverChance =
+      e.kind === 'injury'
+        ? e.treated
+          ? 0.98
+          : e.supported
+            ? 0.92
+            : s.home === 'street'
+              ? 0.45
+              : 0.75
+        : e.treated
+          ? 0.95
+          : e.supported
+            ? 0.8
+            : 0.45;
+    e.recovering = random(s) < recoverChance;
     e.stage = e.recovering ? 'recovering' : 'critical';
     e.critical = !e.recovering;
     log(
@@ -211,6 +279,61 @@ export function healthStep(s, { log, random, decision }, risk) {
   }
   return true;
 }
+// A last illness after it is found: care turns to comfort, then the end. Most dogs with people
+// are put to sleep when it is time (END_SOURCE.euthanasia); the others die on their own.
+function lastIllnessStep(s, e, elapsed, log) {
+  if (elapsed >= 5 && e.stage === 'care') {
+    e.stage = 'managed';
+    e.critical = true;
+    s.health = Math.max(3, s.health - 15);
+    log(
+      s,
+      'illness-worsening',
+      e.treated
+        ? '진료실에서 낫기 어려운 병이라는 말이 오간다. 남은 날을 편하게 보내도록 돌봄이 바뀐다.'
+        : e.supported
+          ? '돌보는 사람이 밥을 잘게 나누고 잠자리를 곁으로 옮겼다. 몸은 천천히 약해진다.'
+          : '아픈 몸으로 혼자 버틴다. 먹는 양이 날마다 줄어든다.',
+    );
+    return true;
+  }
+  if (e.stage === 'managed' && s.day >= e.due - 3) {
+    e.stage = 'final-care';
+    log(
+      s,
+      'illness-final-care',
+      e.supported
+        ? '일어서는 일이 드물어졌다. 익숙한 손이 자주 머리를 쓰다듬는다.'
+        : '움직이기 어려워 잠자리에서만 시간을 보낸다.',
+    );
+    return true;
+  }
+  if (e.stage === 'final-care' && s.day >= e.due) {
+    const cause = TYPES[e.kind].cause,
+      shareEuth = END_SOURCE.euthanasia / (END_SOURCE.euthanasia + END_SOURCE.unassisted),
+      euth = e.supported && s.home !== 'street' && (dayMix(s, 2904) % 1000) / 1000 < shareEuth;
+    s.alive = false;
+    s.pending = null;
+    const how = euth
+      ? s.home === 'shelter'
+        ? '보호소 돌봄 속에서 편히 보내 줌'
+        : '보호자가 곁에서 편히 보내 줌'
+      : e.supported
+        ? '곁의 돌봄 속에 숨을 거둠'
+        : '돌봄 없이 숨을 거둠';
+    s.cause = `${cause} · ${how}`;
+    s.medical.history.push({ ...e, end: s.day, outcome: 'died' });
+    log(
+      s,
+      'death',
+      euth
+        ? `${euro(cause)} 더는 편히 지낼 수 없게 되었다. 익숙한 손이 몸을 쓰다듬는 사이, 잠들 듯 숨이 멎었다.`
+        : `${euro(cause)} 기력이 다했다. ${e.supported ? '곁의 기척을 느끼며' : '몸을 누인 자리에서'} 호흡이 천천히 멎었다.`,
+    );
+    return true;
+  }
+  return true;
+}
 export function validateHealth(s) {
   if (!s.medical) return;
   const m = s.medical,
@@ -223,7 +346,10 @@ export function validateHealth(s) {
         !Number.isInteger(e.start) ||
         e.start < 0 ||
         e.start > s.day ||
-        !['symptoms', 'care', 'recovering', 'critical', 'final-care'].includes(e.stage) ||
+        !['symptoms', 'care', 'recovering', 'critical', 'final-care', 'managed'].includes(
+          e.stage,
+        ) ||
+        (e.terminal && !Number.isFinite(e.due)) ||
         !Number.isFinite(e.baseline)))
   )
     throw Error('손상된 건강 기록');

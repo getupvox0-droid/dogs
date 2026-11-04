@@ -22,6 +22,8 @@ export function physiologyStep(s, log) {
   const available = Math.min(
     0.98,
     (s.home === 'street' ? 0.25 : 0.55) +
+      // A lost family dog stays near houses, where scraps and kind hands are (game assumption).
+      (s.story?.lost ? 0.15 : 0) +
       access.food / 250 +
       (caregiver ? caregiver.care / 700 : 0) +
       // Know-how from finding food at crossroads (crossroads.js); 0 until the dog has some.
