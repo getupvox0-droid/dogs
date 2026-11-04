@@ -388,6 +388,11 @@ export function choose(s, id, expectedUid = null, { auto = false } = {}) {
   if (died >= 0 && died < s.log.length - 1) s.log.push(...s.log.splice(died, 1));
   return true;
 }
+// Choices that cannot wait: the body, a lost dog, a litter, the year's direction, and the steps
+// of a person coming back again and again until a door opens (the street's way home).
+const URGENT_DECISION =
+  /^(health-response|pain-response|lost-help|year-focus|litter|encounter$|door$|crossroad:(den-|milk-push|shelter-visitor))/;
+export const QUIET_DAYS = 30;
 function decision(s, id, text, options) {
   if (s.pending) return false;
   if (
@@ -406,6 +411,13 @@ function decision(s, id, text, options) {
     door: 2,
   };
   if ((s.storyCounts[id] || 0) >= (caps[id] ?? Infinity)) return false;
+  // Ordinary choices leave a few quiet days after the last one, so the life is read between
+  // them; a system whose choice is refused simply offers it again later.
+  // A street pup's first year turns on its crossroads, so those are not held back either.
+  const urgent =
+    URGENT_DECISION.test(id) || (id.startsWith('crossroad:') && s.home === 'street' && s.day < 365);
+  if (!urgent && s.day - (s.lastDecisionDay ?? -Infinity) < QUIET_DAYS) return false;
+  s.lastDecisionDay = s.day;
   s.storyCounts[id] = (s.storyCounts[id] || 0) + 1;
   s.decisionSerial = (s.decisionSerial || 0) + 1;
   s.pending = {

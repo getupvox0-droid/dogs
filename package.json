@@ -9,6 +9,7 @@
     "start": "node scripts/restore-assets.mjs && python3 -m http.server 8000 --directory dist",
     "format": "npx prettier@3.3.3 --write \"dist/*.{js,css,html}\" \"tests/*.mjs\" \"scripts/*.mjs\"",
     "measure:street-pups": "node scripts/measure-street-pups.mjs 300",
+    "measure:pacing": "node scripts/measure-pacing.mjs 20 normal",
     "measure:lifespan": "node scripts/measure-lifespan.mjs 400",
     "check:text": "node scripts/check-crossroad-text.mjs"
   },

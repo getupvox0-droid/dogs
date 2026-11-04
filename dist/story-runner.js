@@ -8,7 +8,8 @@ export const STORY_CONFIG = {
   observeWaitMin: 800,
   observeWaitMax: 4500,
 };
-// How long one life takes to watch. Only presentation changes: beats group differently and wait
+// How long one life takes to watch (measured with scripts/measure-pacing.mjs at normal reading
+// speed, 1×, with time to read and answer each choice). Only presentation changes: beats group differently and wait
 // longer or shorter. Every day is still simulated, so the same seed and choices give the same life.
 const ORDINARY = [
   'smell',
@@ -23,11 +24,11 @@ const ORDINARY = [
 export const LIFE_LENGTHS = {
   short: {
     label: '짧게',
-    note: '약 25분 · 평범한 하루는 읽지 않고 지나갑니다.',
+    note: '약 35분 · 평범한 하루는 읽지 않고 지나갑니다.',
     wait: 0.75,
   },
-  normal: { label: '보통', note: '약 40분', wait: 1 },
-  long: { label: '길게', note: '약 1시간 · 장면마다 더 오래 머뭅니다.', wait: 1.8 },
+  normal: { label: '보통', note: '약 55분', wait: 1 },
+  long: { label: '길게', note: '약 75분 · 장면마다 더 오래 머뭅니다.', wait: 1.8 },
 };
 export function lifeLength(s) {
   const v = s.chronicle?.preferences?.lifeLength;
@@ -107,6 +108,8 @@ export function nextStoryBeat(
     important,
     text,
     readText,
+    observe,
+    length,
     waitMs:
       LIFE_LENGTHS[length].wait *
       Math.max(
@@ -157,7 +160,14 @@ export function timelineEntries(s, { observe = simulationMode(s) === 'observe' }
 }
 
 export function beatDelay(beat, speed = 1) {
-  const scaled = Math.max(500, beat.waitMs / Math.max(1, Number(speed) || 1));
+  const x = Math.max(1, Number(speed) || 1),
+    scaled = Math.max(500, beat.waitMs / x);
   const read = beat.readText ?? beat.text;
-  return beat.important || read.length > 120 ? Math.max(scaled, readingMs(read)) : scaled;
+  // Important or long records always get their full reading time; the rest get it at 1× and a
+  // share of it when the player has chosen to go faster.
+  if (beat.important || read.length > 120) return Math.max(scaled, readingMs(read));
+  // Quick observation keeps its brisk pace; story mode never shows text faster than it reads.
+  // A long life lingers on every scene, the reading floor included.
+  const linger = Math.max(1, LIFE_LENGTHS[beat.length]?.wait ?? 1);
+  return beat.observe || !read ? scaled : Math.max(scaled, (readingMs(read) * linger) / x);
 }
