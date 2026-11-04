@@ -489,3 +489,140 @@ Object.assign(HAZARDS, {
     death: { cause: '얼음이 깨져 물에 빠짐', text: '차가운 물이 숨을 막았다.' },
   },
 });
+
+// Weather moments: storms, snow, and looking for a dry place in the rain.
+Object.assign(HAZARDS, {
+  storm: {
+    severity: 2,
+    ok: (s) => s.world === 'rain',
+    cue: ['빗줄기가 거세지고, 바람이 물건들을 굴리며 지나간다.'],
+    know: () => '폭우 때는 간판이나 나뭇가지가 떨어지고, 낮은 곳의 물이 순식간에 불어납니다.',
+    fear: '바람 소리가 커지자 몸을 바닥에 붙인다.',
+    near: '바로 옆으로 무언가 무거운 것이 떨어졌다. 놀라 벽에 몸을 붙였다.',
+    hit: '바람에 날린 것이 몸을 덮쳤다. 빗물 속에 깔렸다가 겨우 빠져나왔다.',
+    hurt: '폭우 속에서 떨어진 것에 맞은 등과 다리가 아프다.',
+    death: { cause: '폭우 속 사고', text: '빗물과 바람 소리 속에서 몸이 멈췄다.' },
+  },
+  snow: {
+    severity: 2,
+    noInjury: true,
+    ok: (s) => s.world === 'cold',
+    cue: ['눈이 발목까지 쌓였다. 아는 냄새들이 눈에 덮여 흐릿하다.'],
+    know: () => '눈이 쌓이면 냄새로 길을 찾기 어렵고, 오래 머물면 발과 귀가 얼어붙습니다.',
+    fear: '발이 눈에 빠지자 걸음이 멈춘다.',
+    near: '한참 가다가 발이 시려 왔다. 왔던 발자국을 따라 돌아왔다.',
+    hit: '눈 속에서 길을 잃었다. 발이 얼어붙을 때까지 헤매다 겨우 몸을 숨길 곳을 찾았다.',
+    cost: { health: -12, fatigue: 30, comfort: -10 },
+    death: { cause: '눈 속에서 얼어붙음', text: '눈이 몸 위로 소리 없이 쌓였다.' },
+  },
+});
+LURES.dry = {
+  ok: (s) => s.world === 'rain',
+  sense: () => '털이 흠뻑 젖어 무겁다. 저쪽에 비가 들이치지 않는 어두운 틈이 보인다.',
+  rush: '빗속을 가로질러 틈 안으로 뛰어든다',
+  careful: '처마 밑을 따라 천천히 틈 쪽으로 간다',
+  avoid: '지금 자리에서 비를 맞으며 버틴다',
+  reward: () => '마른 바닥에 몸을 말았다. 빗소리가 멀어졌다.',
+  lack: '젖은 털이 밤새 마르지 않았다.',
+  delta: { comfort: 8, fatigue: -10 },
+  miss: { comfort: -6, health: -2 },
+};
+// Someone the dog runs with heads into danger first.
+LURES.buddy = {
+  cap: 3,
+  items: ['형제', '함께 다니는 개'],
+  ok: (s) =>
+    s.relations?.some((r) => r.kind === 'sibling' && r.active !== false && s.day < 365) ||
+    (s.friend?.met && s.friend.area === s.areaId),
+  itemFor: (s) =>
+    s.day < 365 && s.relations?.some((r) => r.kind === 'sibling' && r.active !== false)
+      ? '형제'
+      : '함께 다니는 개',
+  sense: (x, j) => `${j(x, '이', '가')} 앞서 걸어간다. 무언가에 정신이 팔려 돌아보지 않는다.`,
+  rush: '뒤쫓아가 앞을 막아선다',
+  careful: '뒤에서 짖으며 따라간다',
+  avoid: '제자리에 남아 지켜본다',
+  reward: (x, j) => `앞을 막아서자 ${j(x, '이', '가')} 멈춰 섰다. 둘이 나란히 돌아왔다.`,
+  lack: '앞서가던 냄새가 멀어졌다. 한참 뒤에야 다시 만났다.',
+  delta: { dogBond: 10, happiness: 4 },
+  miss: { dogBond: -3, stress: 6 },
+};
+for (const [setting, extra] of Object.entries({
+  alley: { hazards: ['storm'], lures: ['dry', 'buddy'] },
+  market: { hazards: ['storm'], lures: ['dry'] },
+  roadside: { hazards: ['storm', 'snow'], lures: ['buddy'] },
+  field: { hazards: ['storm', 'snow'], lures: ['buddy'] },
+  farmroad: { hazards: ['snow'], lures: ['buddy', 'dry'] },
+  park: { hazards: ['storm', 'snow'], lures: ['buddy'] },
+  yard: { hazards: ['snow'], lures: ['dry'] },
+  hillside: { hazards: ['snow'], lures: ['buddy'] },
+  shelteryard: { hazards: ['snow'], lures: ['buddy'] },
+  stream: { lures: ['buddy'] },
+  railway: { lures: ['buddy'] },
+})) {
+  SETTINGS[setting].hazards.push(...(extra.hazards || []));
+  SETTINGS[setting].lures.push(...(extra.lures || []));
+}
+
+// Places that belong to one country. They join that country's settings by where the dog lives.
+Object.assign(SETTINGS, {
+  temple: {
+    text: ['향 냄새가 짙은 계단 앞이다. 사람들이 놓고 간 음식 냄새가 섞여 있다.'],
+    lures: ['food', 'person', 'dogcall'],
+    hazards: ['hostile-dog', 'hostile-human', 'traffic'],
+  },
+  ghat: {
+    text: ['넓은 돌계단이 강물 속으로 이어진다. 사람들이 물가에서 몸을 씻는다.'],
+    lures: ['food', 'water', 'person'],
+    hazards: ['water', 'hostile-dog'],
+  },
+  canal: {
+    text: ['좁은 물길을 따라 집들이 늘어서 있다. 나무 발판 아래로 물이 출렁인다.'],
+    lures: ['food', 'prey', 'dogcall'],
+    hazards: ['water', 'machine', 'height'],
+  },
+  courtyard: {
+    text: ['넓은 돌마당에 비둘기와 고양이가 많다. 사람들이 오가며 먹이를 흘린다.'],
+    lures: ['food', 'prey', 'person'],
+    hazards: ['hostile-dog', 'hostile-human'],
+  },
+  hillstairs: {
+    text: ['언덕을 따라 좁은 계단과 골목이 끝없이 이어진다. 위아래로 오토바이 소리가 울린다.'],
+    lures: ['food', 'dogcall', 'kids'],
+    hazards: ['traffic', 'height', 'hostile-dog'],
+  },
+  desertroad: {
+    text: ['먼지가 이는 마른 길이 멀리까지 뻗어 있다. 그늘이 거의 없다.'],
+    lures: ['water', 'food', 'scent'],
+    hazards: ['heat', 'traffic', 'lost'],
+  },
+  highway: {
+    text: ['넓은 길 갓길에 풀이 길게 자랐다. 바람이 쉬지 않고 몰아친다.'],
+    lures: ['food', 'scent', 'prey'],
+    hazards: ['traffic', 'lost'],
+  },
+  frozenlake: {
+    text: ['넓은 호수가 하얗게 얼어 있다. 가장자리에서 새들이 얼음을 쪼고 있다.'],
+    lures: ['prey', 'dogcall', 'buddy'],
+    hazards: ['ice', 'lost'],
+  },
+  hutong: {
+    text: ['낮은 담장 사이로 좁은 골목이 미로처럼 이어진다. 집집마다 밥 냄새가 새어 나온다.'],
+    lures: ['food', 'person', 'prey', 'kids'],
+    hazards: ['traffic', 'hostile-human', 'sharp'],
+  },
+});
+// country → { street: [...], family: [...] } settings added for dogs living there.
+export const COUNTRY_SETTINGS = {
+  IN: { street: ['temple', 'ghat'], family: ['temple'] },
+  TH: { street: ['temple', 'canal'], family: ['canal'] },
+  JP: { family: ['temple'] },
+  CN: { street: ['hutong'], family: ['hutong'] },
+  TR: { street: ['courtyard'], family: ['courtyard'] },
+  BR: { street: ['hillstairs'], family: ['hillstairs'] },
+  MX: { street: ['desertroad'], family: ['desertroad'] },
+  US: { street: ['highway'], family: ['highway'] },
+  CA: { street: ['highway', 'frozenlake'], family: ['frozenlake'] },
+  PH: { street: ['canal'] },
+  NG: { street: ['courtyard'] },
+};

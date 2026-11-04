@@ -30,7 +30,7 @@ const live = (seed, pick) => {
 };
 
 test('every crossroad has player-only knowledge, 2–3 options and a safe way out', () => {
-  assert.equal(CROSSROADS.length, 10);
+  assert.equal(CROSSROADS.length, 12);
   for (const c of CROSSROADS) {
     assert.ok(c.know.length > 10, c.id);
     assert.ok(c.options.length >= 2 && c.options.length <= 3, c.id);
@@ -94,7 +94,7 @@ test('a life with crossroads replays from its share link, and old links are refu
     again.log.map((e) => [e.day, e.id, e.text]),
     s.log.map((e) => [e.day, e.id, e.text]),
   );
-  const old = encodeLife(s).replace(/^v6./, 'v5.');
+  const old = encodeLife(s).replace(/^v7./, 'v6.');
   assert.throws(() => decodeLife(old));
 });
 
@@ -297,4 +297,38 @@ test('new parts keep their rules: ice only in the cold, traps only where somethi
     assert.ok(st.text.length >= 1);
   }
   assert.ok(Object.keys(SETTINGS).length >= 24);
+});
+
+test('country places only appear in their country, and the companion moment is capped', async () => {
+  const { COUNTRY_SETTINGS } = await import('../dist/crossroad-parts.js');
+  const own = new Set(
+    Object.values(COUNTRY_SETTINGS).flatMap((c) => [...(c.street || []), ...(c.family || [])]),
+  );
+  for (let seed = 1; seed <= 60; seed++) {
+    const s = createLife(seed * 41, null, { birthMode: 'explore' });
+    acknowledgeBirth(s);
+    const mine = new Set([
+      ...(COUNTRY_SETTINGS[s.country.id]?.street || []),
+      ...(COUNTRY_SETTINGS[s.country.id]?.family || []),
+    ]);
+    let k = 0,
+      buddy = 0;
+    while (s.alive) {
+      if (!s.pending) {
+        advance(s, 1);
+        continue;
+      }
+      const p = s.pending;
+      if (p.id === 'crossroad:gen') {
+        if (own.has(p.gen.setting))
+          assert.ok(mine.has(p.gen.setting), `${s.country.id} met ${p.gen.setting}`);
+        if (p.gen.lure === 'buddy') buddy++;
+        if (p.gen.hazard === 'snow') assert.equal(s.world, 'cold');
+        if (p.gen.hazard === 'storm' || p.gen.lure === 'dry') assert.equal(s.world, 'rain');
+      }
+      k++;
+      choose(s, p.options[k % p.options.length].id, decisionUid(s));
+    }
+    assert.ok(buddy <= 3, `buddy ${buddy}`);
+  }
 });

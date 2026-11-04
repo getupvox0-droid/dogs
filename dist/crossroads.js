@@ -6,7 +6,14 @@ import { mix } from './world.js';
 import { canAct } from './species.js';
 import { beginIllness } from './health.js';
 import { josa } from './korean.js';
-import { SETTINGS, LURES, HAZARDS, SETTING_FAMILIES, settingFamily } from './crossroad-parts.js';
+import {
+  SETTINGS,
+  LURES,
+  HAZARDS,
+  SETTING_FAMILIES,
+  COUNTRY_SETTINGS,
+  settingFamily,
+} from './crossroad-parts.js';
 import { applyTurn } from './life-turns.js';
 
 const YEAR = 365;
@@ -581,6 +588,91 @@ export const CROSSROADS = [
   },
 ];
 
+// Old age: moments that only come late, when the body no longer keeps up with the habit.
+CROSSROADS.push(
+  {
+    id: 'last-long-walk',
+    from: 10 * YEAR,
+    to: 25 * YEAR,
+    ok: (s) => s.home === 'family',
+    text: () =>
+      '산책줄이 들린다. 사람이 오늘은 예전처럼 먼 길로 가려 한다. 뒷다리가 무겁지만 코는 벌써 문밖을 향한다.',
+    know: '나이 든 개에게 긴 산책은 큰 즐거움이지만, 관절과 심장에 부담이 커서 돌아오는 길에 쓰러지기도 합니다.',
+    options: [
+      {
+        id: 'far',
+        text: '예전처럼 끝까지 따라간다',
+        outcomes: [
+          o(
+            (s) => (frail(s) ? 40 : 65),
+            '익숙한 냄새를 끝까지 다 맡고 돌아왔다. 그날 밤 아주 깊이 잤다.',
+            { delta: { happiness: 10, familyBond: 5, fatigue: 30 } },
+          ),
+          o(
+            (s) => (frail(s) ? 60 : 35),
+            '돌아오는 길에 뒷다리가 풀렸다. 사람이 나를 안아 들고 걸었다.',
+            { hurt: '오래 걸은 뒤 뒷다리 관절이 붓고 일어서기 힘들다.', delta: { familyBond: 4 } },
+          ),
+        ],
+      },
+      {
+        id: 'short',
+        text: '골목 끝에서 멈춰 앉는다',
+        outcomes: [
+          o(100, '골목 끝에 멈춰 앉았다. 사람이 옆에 앉아 함께 바람 냄새를 맡았다.', {
+            delta: { familyBond: 6, comfort: 4 },
+            mark: 'patient',
+          }),
+        ],
+      },
+    ],
+  },
+  {
+    id: 'old-sun',
+    from: 8 * YEAR,
+    to: 25 * YEAR,
+    ok: (s) => s.home === 'street',
+    text: () =>
+      '길 한가운데에 햇볕이 고여 따뜻하다. 몸이 굳어서 그늘까지 가는 길이 멀게 느껴진다. 요즘은 소리가 늦게 들린다.',
+    know: '나이 든 길개는 귀가 어두워져 차가 다가오는 소리를 늦게 듣습니다.',
+    options: [
+      {
+        id: 'sun',
+        text: '길 한가운데 햇볕에 몸을 누인다',
+        outcomes: [
+          o(60, '등이 따뜻하게 풀렸다. 오랜만에 깊이 졸았다.', { delta: { comfort: 10 } }),
+          o(30, '굉음이 바로 옆에서 터졌다. 몸을 피하다 다리를 다쳤다.', {
+            hurt: '길에서 피하다 부딪힌 다리가 붓고 뜨겁다.',
+            mark: 'traffic-fear',
+          }),
+          o(10, '빛과 굉음이 한꺼번에 덮쳤다.', {
+            die: {
+              cause: '도로에서 차에 치임',
+              text: '햇볕이 고인 길 위에서 몸이 멈췄다. 등은 아직 따뜻했다.',
+            },
+          }),
+        ],
+      },
+      {
+        id: 'edge',
+        text: '길가 담장 밑의 볕을 찾는다',
+        outcomes: [
+          o(85, '담장 밑 볕에 몸을 붙였다. 지나가는 소리가 멀었다.', {
+            delta: { comfort: 6 },
+            mark: 'road-wise',
+          }),
+          o(15, '담장 밑 볕은 금세 그늘이 되었다.', { delta: { comfort: 1 } }),
+        ],
+      },
+      {
+        id: 'shade',
+        text: '그늘에서 몸을 말고 쉰다',
+        outcomes: [o(100, '그늘은 서늘했지만 조용했다.', { delta: { fatigue: -10, comfort: -2 } })],
+      },
+    ],
+  },
+);
+
 export function initCrossroads(s) {
   s.crossroads ??= { version: 1, next: 20, seen: [], marks: [], history: [] };
   // Street pups meet their first moments soon after weaning, when finding food starts to matter.
@@ -624,7 +716,9 @@ function combos(s, state) {
     const st = SETTINGS[setting];
     for (const lure of st.lures) {
       const L = LURES[lure];
-      if ((L.min && s.day < L.min) || (L.ok && !L.ok(s))) continue;
+      // A lure with a cap (the companion in danger) stops after that many times in a life.
+      const used = state.used.filter((u) => u.startsWith(lure + ':')).length;
+      if ((L.min && s.day < L.min) || (L.ok && !L.ok(s)) || (L.cap && used >= L.cap)) continue;
       for (const hazard of st.hazards) {
         const H = HAZARDS[hazard];
         if ((H.ok && !H.ok(s)) || (H.lures && !H.lures.includes(lure))) continue;
@@ -635,7 +729,11 @@ function combos(s, state) {
   const fresh = out.filter((c) => c.fresh);
   return fresh.length ? fresh : out;
 }
-const settingFamilyList = (s) => SETTING_FAMILIES[settingFamily(s)];
+// Settings for where the dog lives now, plus places that belong to its country.
+const settingFamilyList = (s) => [
+  ...SETTING_FAMILIES[settingFamily(s)],
+  ...((s.home !== 'shelter' && COUNTRY_SETTINGS[s.country?.id]?.[s.home]) || []),
+];
 export function generatedText(s, g) {
   const st = SETTINGS[g.setting],
     L = LURES[g.lure],
@@ -668,7 +766,7 @@ function generate(s, state) {
     setting: c.setting,
     lure: c.lure,
     hazard: c.hazard,
-    item: L.items ? pick(L.items, n >>> 4) : null,
+    item: L.itemFor ? L.itemFor(s) : L.items ? pick(L.items, n >>> 4) : null,
     v: (n >>> 8) % 4,
     who: companionNear(s, c.setting),
   };
@@ -817,7 +915,15 @@ function eligible(s, c) {
 }
 // Moments that only exist where the dog lives now; a street dog is often adopted or gone within
 // a year, so these go first while they still can happen.
-const PLACE_BOUND = ['street-meat', 'cold-night', 'big-dog', 'stranger-hand', 'high-bed'];
+const PLACE_BOUND = [
+  'street-meat',
+  'cold-night',
+  'big-dog',
+  'stranger-hand',
+  'high-bed',
+  'last-long-walk',
+  'old-sun',
+];
 // Every 2–5 months in the first two years (when most street lives turn), then every 6–14 months.
 export function crossroadStep(s, { decision }) {
   const state = initCrossroads(s);

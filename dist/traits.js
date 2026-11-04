@@ -40,6 +40,10 @@ const LABELS = {
   'trap-wise': '풀숲에서 발밑을 살필 줄 앎',
   'wild-wise': '짐승을 피해 돌아갈 줄 앎',
   'ice-wise': '얼음 위에서 몸을 낮출 줄 앎',
+  'storm-fear': '거센 바람에 몸을 바닥에 붙임',
+  'snow-fear': '눈 덮인 길을 꺼림',
+  'storm-wise': '폭우 속에서 벽에 붙을 줄 앎',
+  'snow-wise': '눈 속에서 발자국을 되짚을 줄 앎',
 };
 const TURNS = ['adopt', 'rescued-shelter', 'caught-shelter', 'gate-out', 'shelter-escape'];
 
