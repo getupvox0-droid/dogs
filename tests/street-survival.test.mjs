@@ -34,7 +34,7 @@ test('street pups reach adulthood near the field figure, and careful play helps'
   };
   const average = run((o, k) => o[k % o.length]),
     careful = run((o) => o[1]);
-  assert.ok(average > 0.1 && average < 0.32, `average ${average}`);
+  assert.ok(average > 0.13 && average < 0.27, `average ${average}`);
   assert.ok(careful > average, `careful ${careful} vs ${average}`);
   assert.equal(PUP_SURVIVAL_SOURCE.value, 0.19);
 });

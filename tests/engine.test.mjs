@@ -217,7 +217,9 @@ test('growth milestones occur once, in developmental order', () => {
     assert.ok(s.milestones.eyes >= 13 && s.milestones.eyes <= 19);
     count++;
   }
-  assert.ok(count > 90);
+  // About a third of these lives start on the street, where 56% of pups die within three
+  // months (reproduction-data.js); most of the rest live.
+  assert.ok(count > 80, `alive ${count}`);
 });
 test('lost dog cannot receive family events; reunion restores original home', () => {
   let s = createLife(3);

@@ -15,19 +15,21 @@ import { encodeLife, replayLife } from '../dist/share.js';
 import { FOCUS, focusEffect, focusYears } from '../dist/year-focus.js';
 import { pupDanger } from '../dist/street-survival.js';
 
+const untilFocus = (s) => {
+  while (s.alive && s.pending?.id !== 'year-focus')
+    s.pending ? choose(s, automaticAction(s, random), null, { auto: true }) : advance(s, 1);
+  return s;
+};
+// The first life born in `home` that lives to its first direction (many street pups do not).
 const born = (home) => {
   for (let seed = 1; ; seed++) {
     const s = createLife(seed, `y-${seed}`, { birthMode: 'real' });
     if (s.home !== home) continue;
     setBirthDate(s, '2026-11-03');
     acknowledgeBirth(s);
-    return s;
+    const probe = restore(serialize(s));
+    if (untilFocus(probe).alive && probe.home === home) return s;
   }
-};
-const untilFocus = (s) => {
-  while (s.alive && s.pending?.id !== 'year-focus')
-    s.pending ? choose(s, automaticAction(s, random), null, { auto: true }) : advance(s, 1);
-  return s;
 };
 
 test('every direction reads cleanly and fits an option button', () => {
