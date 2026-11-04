@@ -9,8 +9,9 @@ import { STREET_REPRODUCTION } from './reproduction-data.js';
 import { focusEffect } from './year-focus.js';
 
 // Daily base chance, fitted so that average play reaches maturity at about the field figure
-// (game calibration against pupReachMaturity; see tests/street-survival.test.mjs).
-export const PUP_BASE_DAILY = 0.0085;
+// (game calibration against pupReachMaturity; see tests/street-survival.test.mjs and
+// scripts/measure-street-pups.mjs: automatic play ≈18%, rotating ≈22%, careful ≈25%).
+export const PUP_BASE_DAILY = 0.0105;
 const CAUSES = [
   // [weight, id, cause, record]; weights follow the human/other split above.
   [
@@ -71,9 +72,9 @@ export function streetPupStep(s, { log }) {
   if (s.home !== 'street' || !s.alive || s.story?.lost) return false;
   const mature = s.reproduction?.matureAt ?? 240;
   if (s.day < 21 || s.day >= mature) return false;
-  const roll = (mix(s.seed + s.day, 2801) % 1000000) / 1000000;
+  const roll = (mix(mix(s.seed, 2801) + s.day, 2801) % 1000000) / 1000000;
   if (roll >= pupDanger(s)) return false;
-  let pickRoll = mix(s.seed + s.day, 2802) % TOTAL;
+  let pickRoll = mix(mix(s.seed, 2802) + s.day, 2802) % TOTAL;
   const [, id, cause, text] = CAUSES.find((c) => (pickRoll -= c[0]) < 0);
   s.alive = false;
   s.pending = null;
