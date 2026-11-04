@@ -133,7 +133,9 @@ test('countries known only by a total derive the owned part', () => {
 });
 
 test('country facts only quote sourced numbers', () => {
-  assert.equal(countryFacts('KR').freeRoaming, '공식 추정치 없음');
+  // No national count; regional surveys are named instead of a number for the whole country.
+  assert.match(countryFacts('KR').freeRoaming, /^공식 추정치 없음 \(지역 조사: 제주/);
+  assert.equal(countryFacts('JP').freeRoaming, '공식 추정치 없음');
   assert.match(countryFacts('US').owned, /^약 8,730만 마리$/);
   assert.ok(countryFacts('IN').sources.some((x) => x.includes('2019')));
 });
