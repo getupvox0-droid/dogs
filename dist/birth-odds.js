@@ -28,7 +28,13 @@ const fromTotal = (total, freeRoaming) => ({
 export const COUNTRY_DOGS = {
   KR: {
     owned: fig(4.99, '농림축산식품부 동물복지 국민의식조사 기반 추정', 'medium', 2024),
-    freeRoaming: fig(0.1, '전국 추정치 없음 · 게임용 가정', 'assumption'),
+    // No national count exists. Regional figures: Jeju mid-mountain wild dogs 1,626–2,168
+    // (Jeju survey, 2021); Seoul Gwanaksan/Bukhansan about 200 (Seoul, 2024). Shelters take in
+    // about 77,000 dogs a year (2024 survey), most of them once owned.
+    freeRoaming: {
+      ...fig(0.1, '전국 추정치 없음 · 게임용 가정', 'assumption'),
+      note: '지역 조사: 제주 중산간 들개 1,626~2,168마리(2021) · 서울 관악산·북한산 약 200마리(2024)',
+    },
   },
   JP: {
     owned: fig(6.79, '일본펫푸드협회 전국 개·고양이 사육실태 조사', 'medium', 2024),
@@ -116,7 +122,7 @@ export function countryFacts(countryId) {
     n = (x) => `약 ${Math.round(x.value * 100).toLocaleString('ko-KR')}만 마리`,
     m = (x) =>
       x.confidence === 'assumption'
-        ? '공식 추정치 없음'
+        ? `공식 추정치 없음${x.note ? ` (${x.note})` : ''}`
         : x.confidence === 'derived'
           ? `${n(x)} (전체에서 계산)`
           : n(x);
