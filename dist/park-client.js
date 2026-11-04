@@ -2,6 +2,7 @@
 import { PATHS, lifeEntry } from './collection.js';
 import { lastLine } from './share-card.js';
 import { canShare, encodeLife } from './share.js';
+import { PARK_LIMITS } from './park.js';
 
 const DEVICE_KEY = 'dogs-park-device',
   LEFT_KEY = 'dogs-park-left';
@@ -161,3 +162,47 @@ export async function reportMemorial(id, box) {
   });
 }
 export const removeMemorial = (id) => api(`/api/memorials/${id}`, { method: 'DELETE' });
+// Redraws a chosen photo at most photoSide pixels wide or tall as a JPEG. Drawing it again leaves
+// out everything the file carried besides the picture (where and when it was taken, the camera).
+export async function shrinkPhoto(file) {
+  if (!file || !/^image\//.test(file.type)) throw Error('사진 파일을 골라 주세요.');
+  let bitmap;
+  try {
+    bitmap = await createImageBitmap(file, { imageOrientation: 'from-image' });
+  } catch {
+    throw Error('이 사진을 열지 못했습니다. 다른 사진을 골라 주세요.');
+  }
+  const side = PARK_LIMITS.photoSide,
+    scale = Math.min(1, side / Math.max(bitmap.width, bitmap.height)),
+    canvas = document.createElement('canvas');
+  canvas.width = Math.round(bitmap.width * scale);
+  canvas.height = Math.round(bitmap.height * scale);
+  canvas.getContext('2d').drawImage(bitmap, 0, 0, canvas.width, canvas.height);
+  bitmap.close?.();
+  for (const quality of [0.85, 0.75, 0.6, 0.45]) {
+    const blob = await new Promise((r) => canvas.toBlob(r, 'image/jpeg', quality));
+    if (blob && blob.size <= PARK_LIMITS.photoBytes) return blob;
+  }
+  throw Error('사진이 너무 큽니다. 다른 사진을 골라 주세요.');
+}
+// Sends the photo for a memorial left from this device; it shows once the park keeper approves.
+export async function uploadPhoto(id, blob, box) {
+  const token = await humanToken(box);
+  let r;
+  try {
+    r = await fetch(`/api/memorials/${id}/photo`, {
+      method: 'POST',
+      headers: {
+        'content-type': blob.type,
+        'x-park-device': deviceId() || '',
+        'x-turnstile': token,
+      },
+      body: blob,
+    });
+  } catch {
+    throw Error('사진을 보내지 못했습니다. 인터넷 연결을 확인해 주세요.');
+  }
+  const data = await r.json().catch(() => null);
+  if (!r.ok) throw Error(data?.error || '사진을 보내지 못했습니다.');
+  return data;
+}

@@ -1,6 +1,7 @@
 // Cloudflare Worker: serves the static game in dist/ and the park API in worker/.
 // Workers Builds runs `npm run build`, then `npx wrangler deploy` with this file.
 // Secrets (set in the dashboard, never here): TURNSTILE_SECRET, DEVICE_SALT, ADMIN_TOKEN.
+// The R2 bucket for park photos must exist before deploying (Cloudflare → R2 → Create bucket).
 {
   "name": "dogs",
   "main": "worker/index.js",
@@ -14,6 +15,13 @@
     // Turnstile site key (public; the secret key is a Worker secret).
     "TURNSTILE_SITE_KEY": "0x4AAAAAAFx_9ge9Ue-9fGuS"
   },
+  "r2_buckets": [
+    {
+      // Photos of real dogs left in the park; only approved ones are served (worker/park-api.js).
+      "binding": "PHOTOS",
+      "bucket_name": "dogs-park-photos"
+    }
+  ],
   "d1_databases": [
     {
       "binding": "DB",

@@ -1796,3 +1796,17 @@ details.note summary {
   color: var(--muted);
   margin-bottom: 6px;
 }
+/* Photos of real dogs in the park (approved ones only). */
+.park-photo {
+  display: grid;
+  gap: 6px;
+}
+#park-photo-preview,
+.park-photo-img {
+  display: block;
+  width: 100%;
+  max-height: 320px;
+  object-fit: cover;
+  border-radius: 10px;
+  background: var(--soft);
+}
