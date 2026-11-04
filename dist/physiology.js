@@ -1,3 +1,4 @@
+import { focusEffect } from './year-focus.js';
 import { mix } from './world.js';
 const clamp = (n) => Math.max(0, Math.min(100, n));
 // Four daily periods; intake is an actual bounded reduction, not a fixed daily subsidy.
@@ -24,7 +25,9 @@ export function physiologyStep(s, log) {
       access.food / 250 +
       (caregiver ? caregiver.care / 700 : 0) +
       // Know-how from finding food at crossroads (crossroads.js); 0 until the dog has some.
-      (s.crossroads?.forage || 0) / 100,
+      (s.crossroads?.forage || 0) / 100 +
+      // The year's direction (year-focus.js).
+      (focusEffect(s).food || 0),
   );
   const milkAvailable = young && (w.origin.mother || w.care >= 20);
   const mealPhases = young ? [0, 1, 2, 3] : s.day % 2 ? [1, 3] : [0, 2];

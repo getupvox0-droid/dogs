@@ -6,6 +6,7 @@
 // staying near its mother, and knowing the road.
 import { mix } from './world.js';
 import { STREET_REPRODUCTION } from './reproduction-data.js';
+import { focusEffect } from './year-focus.js';
 
 // Daily base chance, fitted so that average play reaches maturity at about the field figure
 // (game calibration against pupReachMaturity; see tests/street-survival.test.mjs).
@@ -63,6 +64,7 @@ export function pupDanger(s) {
   d *= 1 - Math.min(0.45, (c.forage || 0) / 60);
   if (c.marks?.includes('road-wise') || c.marks?.includes('traffic-wise')) d *= 0.85;
   if (c.marks?.includes('patient')) d *= 0.9;
+  d *= focusEffect(s).danger ?? 1;
   return d;
 }
 export function streetPupStep(s, { log }) {

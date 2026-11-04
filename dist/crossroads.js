@@ -2,6 +2,7 @@
 // The dog's text stays in its senses; `know` is what only the player sees (principle 1).
 // Odds are game assumptions, not statistics, and depend on the dog's age, body and past marks.
 // What a crossroad leaves behind is a mark that later moments can read back.
+import { focusEffect } from './year-focus.js';
 import { mix } from './world.js';
 import { canAct } from './species.js';
 import { beginIllness } from './health.js';
@@ -1222,8 +1223,17 @@ function generate(s, state) {
   const people = pool.filter((c) => c.lure === 'person' || c.hazard === 'hostile-human'),
     food = pool.filter((c) => c.lure === 'food');
   // A hungry street dog keeps meeting the question of food; after that, people.
-  if (s.home === 'street' && s.needs.hunger > 55 && food.length && n % 10 < 6) pool = food;
-  else if (s.home === 'street' && people.length && n % 10 < 4) pool = people;
+  const f = focusEffect(s);
+  // A dog that has set out toward people this year meets them even when hungry.
+  if (s.home === 'street' && (f.people ?? 1) > 1 && people.length && n % 10 < 7) pool = people;
+  else if (s.home === 'street' && s.needs.hunger > 55 && food.length && n % 10 < 6) pool = food;
+  else if (s.home === 'street' && people.length && n % 10 < Math.min(9, 4 * (f.people ?? 1)))
+    pool = people;
+  else if (f.lures && (n >>> 12) % 10 < 5) {
+    // The year's direction (year-focus.js) leans half of the other moments its way.
+    const leaning = pool.filter((c) => f.lures.includes(c.lure));
+    if (leaning.length) pool = leaning;
+  }
   const c = pool[(n >>> 4) % pool.length],
     L = LURES[c.lure];
   return {
@@ -1358,13 +1368,16 @@ function generatedStep(s, state, decision) {
   const gap = mix(s.seed + s.day, 2722);
   state.genNext =
     s.day +
-    (s.home === 'street' && s.day < YEAR
-      ? 25 + (gap % 25)
-      : s.day < 2 * YEAR
-        ? 50 + (gap % 60)
-        : senior(s)
-          ? 150 + (gap % 150)
-          : 110 + (gap % 130));
+    Math.round(
+      (focusEffect(s).gap ?? 1) *
+        (s.home === 'street' && s.day < YEAR
+          ? 25 + (gap % 25)
+          : s.day < 2 * YEAR
+            ? 50 + (gap % 60)
+            : senior(s)
+              ? 150 + (gap % 150)
+              : 110 + (gap % 130)),
+    );
   return true;
 }
 function eligible(s, c) {
