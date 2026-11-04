@@ -22,7 +22,9 @@ export function physiologyStep(s, log) {
     0.98,
     (s.home === 'street' ? 0.25 : 0.55) +
       access.food / 250 +
-      (caregiver ? caregiver.care / 700 : 0),
+      (caregiver ? caregiver.care / 700 : 0) +
+      // Know-how from finding food at crossroads (crossroads.js); 0 until the dog has some.
+      (s.crossroads?.forage || 0) / 100,
   );
   const milkAvailable = young && (w.origin.mother || w.care >= 20);
   const mealPhases = young ? [0, 1, 2, 3] : s.day % 2 ? [1, 3] : [0, 2];

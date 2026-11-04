@@ -333,7 +333,7 @@ export const CROSSROADS = [
             mark: 'sound-fear',
           }),
           o(
-            (s) => (s.home === 'family' ? 4 : 8) + (senior(s) ? 4 : 0),
+            (s) => (s.home === 'family' ? 3 : 6) + (senior(s) ? 3 : 0),
             '빗속에서 굉음과 빛이 한꺼번에 덮쳤다.',
             {
               die: {
@@ -395,7 +395,7 @@ export const CROSSROADS = [
           o(25, '물살이 몸을 굴렸다. 돌에 옆구리를 부딪히고 겨우 기어 나왔다.', {
             hurt: '물살에 휩쓸려 돌에 부딪힌 옆구리가 아프다. 숨 쉴 때마다 결린다.',
           }),
-          o((s) => 10 + (s.day < YEAR ? 6 : 0) + (senior(s) ? 6 : 0), '물이 귀와 코를 덮었다.', {
+          o((s) => 6 + (s.day < YEAR ? 4 : 0) + (senior(s) ? 4 : 0), '물이 귀와 코를 덮었다.', {
             die: {
               cause: '불어난 물에 휩쓸림',
               text: '흙빛 물살이 몸을 데려갔다. 건너편의 냄새는 끝내 닿지 않았다.',
@@ -583,7 +583,10 @@ export const CROSSROADS = [
 
 export function initCrossroads(s) {
   s.crossroads ??= { version: 1, next: 20, seen: [], marks: [], history: [] };
-  s.crossroads.genNext ??= 75 + (mix(s.seed, 2720) % 45);
+  // Street pups meet their first moments soon after weaning, when finding food starts to matter.
+  s.crossroads.genNext ??=
+    s.home === 'street' ? 50 + (mix(s.seed, 2720) % 15) : 75 + (mix(s.seed, 2720) % 45);
+  s.crossroads.forage ??= 0;
   s.crossroads.used ??= [];
   return s.crossroads;
 }
@@ -654,8 +657,11 @@ function generate(s, state) {
   const n = mix(s.seed + s.day, 2721);
   // A street life is short and turns on people: give the moments that can change it
   // (someone calling, someone with a net) a fair share before it is over.
-  const people = pool.filter((c) => c.lure === 'person' || c.hazard === 'hostile-human');
-  if (s.home === 'street' && people.length && n % 10 < 4) pool = people;
+  const people = pool.filter((c) => c.lure === 'person' || c.hazard === 'hostile-human'),
+    food = pool.filter((c) => c.lure === 'food');
+  // A hungry street dog keeps meeting the question of food; after that, people.
+  if (s.home === 'street' && s.needs.hunger > 55 && food.length && n % 10 < 6) pool = food;
+  else if (s.home === 'street' && people.length && n % 10 < 4) pool = people;
   const c = pool[(n >>> 4) % pool.length],
     L = LURES[c.lure];
   return {
@@ -677,7 +683,7 @@ function generatedOptions(s, g) {
     body = (young ? 1.3 : 1) * (senior(s) ? 1.3 : 1) * (frail(s) ? 1.2 : 1),
     base = { 3: 0.26, 2: 0.28, 1: 0.32 }[H.severity] * body * wise,
     deadly = H.death && (H.severity === 3 || young || senior(s) || frail(s)),
-    share = H.severity === 3 ? 0.09 : 0.06;
+    share = H.severity === 3 ? 0.07 : 0.05;
   const reward = () => L.reward(g.item, josa),
     hit = {
       text: H.hit,
@@ -788,7 +794,13 @@ function generatedStep(s, state, decision) {
   const gap = mix(s.seed + s.day, 2722);
   state.genNext =
     s.day +
-    (s.day < 2 * YEAR ? 50 + (gap % 60) : senior(s) ? 150 + (gap % 150) : 110 + (gap % 130));
+    (s.home === 'street' && s.day < YEAR
+      ? 25 + (gap % 25)
+      : s.day < 2 * YEAR
+        ? 50 + (gap % 60)
+        : senior(s)
+          ? 150 + (gap % 150)
+          : 110 + (gap % 130));
   return true;
 }
 function eligible(s, c) {
@@ -864,6 +876,14 @@ export function crossroadChoice(s, p, id, { log, remember }) {
   }
   log(s, 'crossroad-result', out.text);
   s.log.at(-1).storyId = 'crossroad:' + c.id;
+  // Finding food on the street teaches where food is (physiology.js reads it).
+  if (s.home === 'street' && (out.delta.hunger ?? 0) < 0) {
+    state.forage = Math.min(30, (state.forage || 0) + 5);
+    if (state.forage >= 15 && !state.marks.includes('forager')) {
+      state.marks.push('forager');
+      (state.markDays ??= {}).forager = s.day;
+    }
+  }
   if (out.mark && !state.marks.includes(out.mark)) {
     state.marks.push(out.mark);
     (state.markDays ??= {})[out.mark] = s.day;
@@ -907,6 +927,7 @@ export function validateCrossroads(s) {
       !c.marks.every((m) => typeof m === 'string') ||
       !Array.isArray(c.history) ||
       (c.used != null && (!Array.isArray(c.used) || !c.used.every((u) => typeof u === 'string'))) ||
+      (c.forage != null && (!Number.isFinite(c.forage) || c.forage < 0 || c.forage > 30)) ||
       (c.markDays != null &&
         (typeof c.markDays !== 'object' || !Object.values(c.markDays).every(Number.isInteger))) ||
       (s.pending?.id === 'crossroad:gen' && !validGenerated(s.pending.gen)))
