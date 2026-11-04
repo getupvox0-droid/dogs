@@ -114,7 +114,8 @@ test('same seeded individual follows different choices under different actual re
     s.worldModel.context.space = 'garden';
     s.worldModel.resource = resource;
     s.worldModel.care = resource;
-    run(s, 900);
+    // Choices are spaced (engine.js QUIET_DAYS), so watch long enough for the play ones.
+    run(s, 1500);
     signatures.push(
       s.log.filter((e) => e.decisionId?.startsWith('life:')).map((e) => e.decisionId),
     );

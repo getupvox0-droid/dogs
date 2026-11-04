@@ -44,9 +44,10 @@ test('repeat encounters can lead to adoption and persistent memory', () => {
       if (s.pending) choose(s, s.pending.options[0].id);
       else advance(s, 1);
     }
-    if (s.home === 'family') {
+    // Other turns (a crossroad, a rescue) can also bring a dog home; this one is about people met
+    // again and again.
+    if (s.home === 'family' && s.encounters >= 3) {
       assert.ok(s.memories.includes('new-home'));
-      assert.ok(s.encounters >= 3);
       found = true;
       break;
     }

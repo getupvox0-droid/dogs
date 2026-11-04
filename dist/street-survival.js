@@ -10,7 +10,7 @@ import { focusEffect } from './year-focus.js';
 
 // Daily base chance, fitted so that average play reaches maturity at about the field figure
 // (game calibration against pupReachMaturity; see tests/street-survival.test.mjs and
-// scripts/measure-street-pups.mjs: automatic play ≈18%, rotating ≈22%, careful ≈25%).
+// scripts/measure-street-pups.mjs: automatic play ≈18%, rotating ≈21%, careful ≈23%).
 export const PUP_BASE_DAILY = 0.0105;
 const CAUSES = [
   // [weight, id, cause, record]; weights follow the human/other split above.
