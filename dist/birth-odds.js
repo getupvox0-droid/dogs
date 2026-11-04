@@ -7,6 +7,10 @@ export const BIRTH_MODES = {
     label: '현실 비율',
     note: '나라별 개 수와 길·마을에서 사는 개의 추정치로 뽑습니다. 현재 12개 나라만 포함합니다.',
   },
+  home: {
+    label: '내 나라에서',
+    note: '고른 나라 안에서, 그 나라의 반려견·길개 추정치 비율로 출생 환경을 뽑습니다.',
+  },
 };
 // Newborns in shelters or foster care: no comparable data, so a small fixed share is assumed.
 export const SHELTER_SHARE = { value: 0.02, source: '게임용 가정', confidence: 'assumption' };

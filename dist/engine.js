@@ -193,6 +193,11 @@ export function setName(s, raw) {
 function pickBirth(s, mode) {
   const a = random(s),
     b = random(s);
+  // In one chosen country: the country is fixed, the home follows that country's real shares.
+  if (mode === 'home') {
+    const country = COUNTRIES.find((c) => c.id === s.homeCountry) || COUNTRIES[0];
+    return { country, home: weightedPick(Object.entries(homeShares(country.id)), b) };
+  }
   if (mode !== 'real')
     return {
       country: COUNTRIES[Math.floor(a * COUNTRIES.length)],
@@ -207,7 +212,11 @@ function pickBirth(s, mode) {
 }
 const HOMES = ['family', 'street', 'shelter'];
 export function createLife(seed = Date.now(), lifeId = null, options = {}) {
-  const birthMode = options.birthMode === 'real' ? 'real' : 'explore';
+  const birthMode = ['real', 'home'].includes(options.birthMode) ? options.birthMode : 'explore';
+  const homeCountry =
+    birthMode === 'home' && COUNTRIES.some((c) => c.id === options.country)
+      ? options.country
+      : null;
   const s = {
     version: VERSION,
     dataVersion: 'prototype-1',
@@ -225,14 +234,15 @@ export function createLife(seed = Date.now(), lifeId = null, options = {}) {
     recent: {},
     log: [],
     world: null,
-    birthMode,
+    birthMode: birthMode === 'home' && !homeCountry ? 'real' : birthMode,
+    homeCountry,
     name: null,
     daily: /^\d{4}-\d{2}-\d{2}$/.test(options.daily || '') ? options.daily : null,
     // Every decision that changed this life, in order, so it can be replayed from the seed
     // (see share.js). null for saves made before the trail existed.
     trail: [],
   };
-  const born = pickBirth(s, birthMode);
+  const born = pickBirth(s, s.birthMode);
   s.country = born.country;
   s.home = born.home;
   s.breed = pick(s, BREEDS[s.country.id]);
@@ -721,6 +731,7 @@ export function restore(raw) {
     typeof s.alive !== 'boolean' ||
     !(s.name == null || (typeof s.name === 'string' && s.name === cleanName(s.name) && s.name)) ||
     !(s.birthMode == null || s.birthMode in BIRTH_MODES) ||
+    (s.birthMode === 'home' && !COUNTRIES.some((c) => c.id === s.homeCountry)) ||
     !(s.daily == null || /^\d{4}-\d{2}-\d{2}$/.test(s.daily)) ||
     !(
       s.trail == null ||

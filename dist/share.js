@@ -6,7 +6,7 @@ import { automaticAction } from './decisions.js';
 
 // Bump whenever the simulation changes, so links from an older game are refused instead of
 // silently replaying into a different life.
-export const SHARE_VERSION = 10;
+export const SHARE_VERSION = 11;
 const MAX_DAYS = 30 * 365;
 
 // Two trail tokens (0–5 each) fit one base-36 digit.
@@ -47,7 +47,7 @@ export function encodeLife(s) {
     s.seed.toString(36),
     enc(s.lifeId),
     s.chronicle.birthDate,
-    s.birthMode === 'real' ? 'r' : 'e',
+    s.birthMode === 'home' ? 'h' + s.homeCountry : s.birthMode === 'real' ? 'r' : 'e',
     s.daily ? 'd' : '-',
     enc(s.name || ''),
     s.day.toString(36),
@@ -66,7 +66,8 @@ export function decodeLife(code) {
     seed: parseInt(f[1], 36) >>> 0,
     lifeId: decodeURIComponent(f[2]),
     birthDate,
-    birthMode: f[4] === 'r' ? 'real' : 'explore',
+    birthMode: f[4] === 'r' ? 'real' : /^h[A-Z]{2}$/.test(f[4]) ? 'home' : 'explore',
+    country: /^h[A-Z]{2}$/.test(f[4]) ? f[4].slice(1) : null,
     daily: f[5] === 'd' ? birthDate : null,
     name: decodeURIComponent(f[6]) || null,
     day: parseInt(f[7], 36),
@@ -76,7 +77,11 @@ export function decodeLife(code) {
 // Rebuilds the life. Throws if the replay does not end exactly where the original did.
 export function replayLife(code) {
   const d = decodeLife(code);
-  const s = createLife(d.seed, d.lifeId, { birthMode: d.birthMode, daily: d.daily });
+  const s = createLife(d.seed, d.lifeId, {
+    birthMode: d.birthMode,
+    country: d.country,
+    daily: d.daily,
+  });
   setBirthDate(s, d.birthDate);
   setName(s, d.name);
   acknowledgeBirth(s);

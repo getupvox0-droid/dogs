@@ -155,3 +155,28 @@ test('the region shown at birth always matches the kind of birth place', () => {
   }
   assert.ok(withRegion > 100 && withRegion < 500);
 });
+
+test('"내 나라에서" keeps the chosen country, follows its home shares, and replays from a link', async () => {
+  const { createLife, restore, serialize } = await import('../dist/engine.js');
+  const { homeShares } = await import('../dist/birth-odds.js');
+  const { detectCountry } = await import('../dist/home-country.js');
+  const ids = ['KR', 'JP', 'IN', 'US', 'TR', 'CA', 'BR', 'MX', 'CN', 'PH', 'NG', 'TH'];
+  const homes = { family: 0, street: 0, shelter: 0 };
+  for (let seed = 1; seed <= 600; seed++) {
+    const s = createLife(seed, null, { birthMode: 'home', country: 'IN' });
+    assert.equal(s.country.id, 'IN');
+    homes[s.home]++;
+  }
+  const share = homeShares('IN');
+  for (const h of Object.keys(homes)) assert.ok(Math.abs(homes[h] / 600 - share[h]) < 0.06, h);
+  // Without a known country the life falls back to the real-ratio draw.
+  assert.equal(createLife(5, null, { birthMode: 'home', country: 'DE' }).birthMode, 'real');
+  const s = createLife(9, null, { birthMode: 'home', country: 'KR' });
+  assert.equal(restore(serialize(s)).homeCountry, 'KR');
+  // Detection from the browser's language and time zone; unknown countries return null.
+  assert.equal(detectCountry({ language: 'ko-KR', timeZone: 'Asia/Seoul' }, ids), 'KR');
+  assert.equal(detectCountry({ language: 'en', timeZone: 'America/Chicago' }, ids), 'US');
+  assert.equal(detectCountry({ language: 'en-CA', timeZone: 'America/Toronto' }, ids), 'CA');
+  assert.equal(detectCountry({ language: 'pt-BR', timeZone: '' }, ids), 'BR');
+  assert.equal(detectCountry({ language: 'de-DE', timeZone: 'Europe/Berlin' }, ids), null);
+});
