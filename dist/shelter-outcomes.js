@@ -43,6 +43,19 @@ export const SHELTER_OUTCOMES = {
     rescued: 39409,
     dogShare: 0.441,
   },
+  // Humane Canada's 2021 survey of member shelters, as reported by several summaries (adopted
+  // 44%, reclaimed 31–33%, euthanised 10–11%); the report's own tables could not be read here.
+  // The rest (transfers and other outcomes, ≈12%) goes on as a stay; died in care 2% is assumed.
+  CA: {
+    year: 2021,
+    source:
+      'Humane Canada, Canadian Animal Shelter Statistics 2021 (요약 보도 기준, 원문 표는 확인하지 못함 · 보호 중 사망과 보호 기간은 게임용 가정)',
+    shares: { returned: 0.32, natural: 0.02, adopted: 0.44, euthanized: 0.1, inCare: 0.12 },
+    meanStayDays: 30,
+    stayAssumed: true,
+    rescued: null,
+    dogShare: null,
+  },
 };
 // 106824 → '10만 7천', 5800000 → '580만'.
 function count(n) {
@@ -143,7 +156,10 @@ export function shelterFact(countryId) {
   const d = SHELTER_OUTCOMES[countryId];
   if (!d) return null;
   const p = (x) => `${Math.round(x * 1000) / 10}%`;
-  return `이 나라에서 한 해 보호소에 들어오는 동물 · 약 ${count(d.rescued)} 마리 (개 ${p(d.dogShare)}) · 입양 ${p(d.shares.adopted)} · 보호 중 사망 ${p(d.shares.natural)} · 인도적 처리 ${p(d.shares.euthanized)} · 주인 반환 ${p(d.shares.returned)} (${d.source})`;
+  const intake = d.rescued
+    ? `이 나라에서 한 해 보호소에 들어오는 동물 · 약 ${count(d.rescued)} 마리 (개 ${p(d.dogShare)})`
+    : '이 나라 보호소에 들어온 개';
+  return `${intake} · 입양 ${p(d.shares.adopted)} · 보호 중 사망 ${p(d.shares.natural)} · 인도적 처리 ${p(d.shares.euthanized)} · 주인 반환 ${p(d.shares.returned)} (${d.source})`;
 }
 // What the player sees at the shelter crossroad (crossroads.js).
 export function shelterKnow(s) {
