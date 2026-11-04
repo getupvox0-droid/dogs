@@ -18,6 +18,7 @@ import {
   endingData,
   memoryTimeline,
   biography,
+  ageText,
 } from './chronicle.js';
 import { BIRTH_MODES, countryFacts, countryShares, homeShares } from './birth-odds.js';
 import {
@@ -75,6 +76,7 @@ import { initLifeState, syncRelations } from './life-state.js';
 import { decisionUid, currentSituation, importantRecords, eventKind } from './decisions.js';
 import { developmentStage, speciesOf } from './species.js';
 import { LIFE_EVENTS } from './life-events.js';
+import { liveDaymates, daymateNews, daymateStatus, daymatePath, compareFive } from './daymates.js';
 const $ = (id) => document.getElementById(id),
   key = 'dogs-life-v1';
 let life = null,
@@ -507,6 +509,123 @@ function modal() {
   closeModal();
 }
 
+// Four dogs born the same day elsewhere (daymates.js), lived in a worker so the page stays smooth.
+let mates = { key: null, lives: null },
+  matesWorker = null;
+function ensureMates() {
+  const seed = life.seed,
+    birthDate = life.chronicle?.birthDate || null,
+    k = `${seed}:${birthDate}`;
+  if (mates.key === k) return mates.lives;
+  mates = { key: k, lives: null };
+  const done = (lives) => {
+    if (mates.key !== k) return;
+    mates.lives = lives;
+    if (!$('ending-screen').hidden) renderEnding();
+    else if (!$('game').hidden) render();
+  };
+  const inline = () => setTimeout(() => done(liveDaymates(seed, birthDate)), 0);
+  try {
+    matesWorker ??= new Worker(new URL('./daymates-worker.js', import.meta.url), {
+      type: 'module',
+    });
+    matesWorker.onmessage = ({ data }) => {
+      if (data.key !== mates.key) return;
+      if (data.lives) done(data.lives);
+      else inline();
+    };
+    matesWorker.onerror = () => {
+      matesWorker = null;
+      inline();
+    };
+    matesWorker.postMessage({ key: k, seed, birthDate });
+  } catch {
+    inline();
+  }
+  return null;
+}
+function renderMates() {
+  const lives = ensureMates();
+  $('daymates').hidden = !lives;
+  if (!lives) return;
+  const news = daymateNews(lives, life.day),
+    list = $('daymate-list');
+  list.replaceChildren();
+  for (const d of lives) {
+    const li = el('li'),
+      last = news.find((n) => n.who === d.who);
+    li.append(
+      el('strong', d.who),
+      el('small', `${d.country} · ${d.place}에서 태어남 · ${daymateStatus(d, life.day)}`),
+    );
+    if (last) {
+      li.append(el('p', `${age(last.day)} · ${last.text}`));
+      if (last.cause) li.append(el('small', last.cause));
+      if (last.fact) li.append(el('small', last.fact, 'fact'));
+      if (life.day - last.day < 30) li.classList.add('fresh');
+    }
+    list.append(li);
+  }
+}
+function renderFive(area) {
+  $('ending-title').textContent = '같은 날 태어난 다섯';
+  const lives = ensureMates();
+  if (!lives) {
+    area.append(el('p', '같은 날 태어난 개들의 삶을 불러오는 중입니다.', 'muted'));
+    return;
+  }
+  const b = life.chronicle.birth,
+    mine = {
+      who: displayName(life),
+      country: b.country,
+      place: b.place,
+      days: life.day,
+      alive: false,
+      cause: life.cause,
+      path: [
+        { day: 0, home: b.home, lost: false },
+        { day: life.day, home: life.home, lost: !!life.story?.lost },
+      ],
+    },
+    { rows, rank } = compareFive(mine, lives);
+  area.append(
+    el(
+      'p',
+      `${life.chronicle.birthDate || '같은 날'}, 세계 어딘가에서 네 마리가 더 태어났습니다. 나라별 개 수와 길에서 사는 개의 추정치로 뽑았고, 저마다 성격대로 살았습니다.`,
+    ),
+    el(
+      'p',
+      `${josa(displayName(life), '은', '는')} 다섯 가운데 ${rank === 1 ? '가장 오래' : rank === 5 ? '가장 짧게' : `${rank}번째로 오래`} 살았습니다.`,
+    ),
+  );
+  const list = el('ol', null, 'five');
+  for (const r of rows) {
+    const li = el('li', null, r.mine ? 'mine' : null);
+    li.append(
+      el('strong', r.mine ? `${r.who} · 이 아이` : r.who),
+      el('small', `${r.country} · ${r.place}에서 태어남`),
+      el('p', `${ageText(r.days)} · ${daymatePath(r)}`),
+      el('small', r.cause || '원인이 남지 않음'),
+    );
+    if (!r.mine && r.days > life.day)
+      li.append(el('p', `이 아이가 떠난 뒤에도 ${ageText(r.days - life.day)}을 더 살았다.`));
+    list.append(li);
+  }
+  area.append(list);
+  const facts = [
+    ...new Set(
+      daymateNews(lives)
+        .map((n) => n.fact)
+        .filter(Boolean),
+    ),
+  ];
+  if (facts.length) {
+    const box = el('div', null, 'compare');
+    box.append(el('h3', '이 다섯의 삶 곁에 있던 숫자'));
+    for (const f of facts) box.append(el('p', f));
+    area.append(box);
+  }
+}
 function render() {
   if (!life) return;
   initLifeState(life);
@@ -572,6 +691,7 @@ function render() {
             : null;
   $('critical-alert').hidden = !alerts;
   $('critical-alert').textContent = alerts || '';
+  renderMates();
   $('recent').replaceChildren();
   for (const e of importantRecords(life)) {
     const li = el('li');
@@ -1524,6 +1644,7 @@ function renderEnding() {
   for (let i = 0; i < 4; i++)
     $('end-tab-' + i).setAttribute('aria-pressed', String(i === endingPage));
   $('end-tab-album').setAttribute('aria-pressed', String(endingPage === 5));
+  $('end-tab-mates').setAttribute('aria-pressed', String(endingPage === 6));
   $('ending-title').textContent = [
     '마지막 순간을 곁에서',
     '살아온 날들을 돌아봅니다.',
@@ -1628,6 +1749,7 @@ function renderEnding() {
     area.append(list);
   } else if (endingPage === 3) area.append(el('p', data.biography, 'biography'));
   else if (endingPage === 5) renderAlbum(area);
+  else if (endingPage === 6) renderFive(area);
   else renderGallery(area);
   $('ending-prev').disabled = endingPage === 0;
   $('ending-next').disabled = endingPage >= 3;
@@ -1735,6 +1857,10 @@ for (let i = 0; i < 4; i++)
   };
 $('end-tab-album').onclick = () => {
   endingPage = 5;
+  renderEnding();
+};
+$('end-tab-mates').onclick = () => {
+  endingPage = 6;
   renderEnding();
 };
 $('ending-prev').onclick = () => {
