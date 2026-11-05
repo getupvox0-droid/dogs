@@ -382,6 +382,7 @@ export function choose(s, id, expectedUid = null, { auto = false } = {}) {
   if (linked) s.log.at(-1).storyId = linked.storyId;
   s.log.at(-1).prompt = p.text;
   s.log.at(-1).action = p.options.find((o) => o.id === id).text;
+  if (auto) s.log.at(-1).auto = true;
   for (let i = before.logLength; i < s.log.length - 1; i++) s.log[i].resolvedDecisionUid = uid;
   // A choice that ends the life (a crossroad) still keeps death as the last record.
   const died = s.log.findIndex((e, i) => i >= before.logLength && e.id === 'death');
@@ -393,6 +394,13 @@ export function choose(s, id, expectedUid = null, { auto = false } = {}) {
 const URGENT_DECISION =
   /^(health-response|pain-response|lost-help|year-focus|litter|encounter$|door$|crossroad:(den-|milk-push|shelter-visitor))/;
 export const QUIET_DAYS = 30;
+// Choices that cannot wait or be left to the dog: health, getting lost, the year's direction,
+// a litter, a person at the door, a street pup's first-year crossroads.
+export function urgentDecision(s, id) {
+  return (
+    URGENT_DECISION.test(id) || (id.startsWith('crossroad:') && s.home === 'street' && s.day < 365)
+  );
+}
 function decision(s, id, text, options) {
   if (s.pending) return false;
   if (
@@ -414,8 +422,7 @@ function decision(s, id, text, options) {
   // Ordinary choices leave a few quiet days after the last one, so the life is read between
   // them; a system whose choice is refused simply offers it again later.
   // A street pup's first year turns on its crossroads, so those are not held back either.
-  const urgent =
-    URGENT_DECISION.test(id) || (id.startsWith('crossroad:') && s.home === 'street' && s.day < 365);
+  const urgent = urgentDecision(s, id);
   if (!urgent && s.day - (s.lastDecisionDay ?? -Infinity) < QUIET_DAYS) return false;
   s.lastDecisionDay = s.day;
   s.storyCounts[id] = (s.storyCounts[id] || 0) + 1;
