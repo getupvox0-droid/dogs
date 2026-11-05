@@ -1,4 +1,4 @@
-import { advance, choose, random } from './engine.js';
+import { advance, choose, random, urgentDecision } from './engine.js';
 import { automaticAction, decisionUid } from './decisions.js';
 import { importantEvent, readingMs } from './time-config.js';
 export const STORY_CONFIG = {
@@ -24,12 +24,29 @@ const ORDINARY = [
 export const LIFE_LENGTHS = {
   short: {
     label: '짧게',
-    note: '약 35분 · 평범한 하루는 읽지 않고 지나갑니다.',
+    note: '약 30분 · 평범한 하루는 읽지 않고 지나가고, 작은 선택은 아이가 스스로 합니다.',
     wait: 0.75,
   },
   normal: { label: '보통', note: '약 55분', wait: 1 },
   long: { label: '길게', note: '약 75분 · 장면마다 더 오래 머뭅니다.', wait: 1.8 },
 };
+// In a short life the player is asked at most once in this many days; other ordinary choices
+// in between are left to the dog (picked the way watching picks them, and kept in the share trail).
+export const SHORT_ASK_DAYS = 90;
+function leaveToDog(s, short, observe) {
+  if (observe) return true;
+  if (!short || urgentDecision(s, s.pending.id)) return false;
+  const c = s.chronicle;
+  if (c.askedUid === s.pending.uid) return false;
+  if (c.lastAskedDay != null && s.day - c.lastAskedDay < SHORT_ASK_DAYS) return true;
+  return false;
+}
+// Marks the waiting choice as put to the player.
+function asked(s) {
+  if (!s.chronicle || s.chronicle.askedUid === s.pending.uid) return;
+  s.chronicle.askedUid = s.pending.uid;
+  s.chronicle.lastAskedDay = s.day;
+}
 export function lifeLength(s) {
   const v = s.chronicle?.preferences?.lifeLength;
   return v in LIFE_LENGTHS ? v : 'normal';
@@ -53,7 +70,10 @@ export function nextStoryBeat(
   let days = 0;
   while (s.alive && days < maxDays) {
     if (s.pending) {
-      if (s.mode !== 'observe') break;
+      if (!leaveToDog(s, short, s.mode === 'observe')) {
+        asked(s);
+        break;
+      }
       choose(s, automaticAction(s, random), decisionUid(s), { auto: true });
       s.presentation = null;
       if (s.log.length > from) break;
@@ -61,7 +81,16 @@ export function nextStoryBeat(
     const n = s.log.length;
     advance(s, 1);
     days++;
-    if (s.pending || !s.alive) break;
+    if (!s.alive) break;
+    if (s.pending) {
+      if (!leaveToDog(s, short, s.mode === 'observe')) {
+        asked(s);
+        break;
+      }
+      choose(s, automaticAction(s, random), decisionUid(s), { auto: true });
+      s.presentation = null;
+      break;
+    }
     const added = s.log.slice(n);
     if (added.some((e) => importantEvent(e) || e.id === 'decision-outcome')) break;
     if (
@@ -153,7 +182,11 @@ export function timelineEntries(s, { observe = simulationMode(s) === 'observe' }
       result.push(group);
     } else {
       group = null;
-      result.push({ ...e, index: i });
+      // A choice the dog made by itself while the player read on (a short life) says so;
+      // watching marks none, since there every choice is its own.
+      if (e.id === 'decision-outcome' && e.auto && !observe)
+        result.push({ ...e, index: i, action: `아이가 스스로 정함 · ${e.action}` });
+      else result.push({ ...e, index: i });
     }
   }
   return result;
