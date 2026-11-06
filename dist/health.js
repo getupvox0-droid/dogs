@@ -7,7 +7,7 @@ import { endCause, endDuration, END_SOURCE } from './end-of-life.js';
 // the VetCompass shares (end-of-life.js); it does not heal.
 // Fitted so that all deaths together (accidents, the street, last illnesses) follow the UK
 // life table for family dogs (game calibration; see scripts/measure-lifespan.mjs).
-export const END_HAZARD_FIT = 0.8;
+export const END_HAZARD_FIT = 0.86;
 // The seed is mixed first so that lives with nearby seeds do not share their unlucky days.
 const dayMix = (s, salt) => mix(mix(s.seed, salt) + s.day, salt);
 export function initHealth(s) {
@@ -102,6 +102,8 @@ export function beginIllness(s, { log, random }, kind = null, symptom = null, te
     baseline: s.health,
     critical: false,
   });
+  // How this episode began, for the question that follows (a crossroad's own wound).
+  if (symptom) e.symptom = symptom;
   if (terminal) {
     e.terminal = true;
     // At least ten days from the first sign to the end; never past the 20-year limit.
@@ -157,7 +159,7 @@ export function healthStep(s, { log, random, decision }, risk) {
     decision(
       s,
       'health-response',
-      TYPES[e.kind].symptom +
+      (e.symptom || TYPES[e.kind].symptom) +
         (s.home === 'street'
           ? ' 바람을 피하던 자리에서 움직임을 줄이고 있다.'
           : ' 익숙한 잠자리 가까이에 돌보는 사람이 있다.'),
@@ -177,7 +179,12 @@ export function healthStep(s, { log, random, decision }, risk) {
     const access = clinicalAccess(s),
       human = access.human,
       care = s.worldModel.care;
-    const detected = e.signal || !human || human.time + human.knowledge >= 70;
+    // A wound or a limp is seen by the people a dog lives with, even if it hides.
+    const detected =
+      e.signal ||
+      !human ||
+      human.time + human.knowledge >= 70 ||
+      (e.kind === 'injury' && s.home === 'family');
     const accessible = !s.story.lost && s.home !== 'street';
     e.supported = accessible && detected && (s.home === 'family' || random(s) < care / 100);
     e.treated = e.supported && access.available && (s.home === 'family' || random(s) < 0.75);
@@ -206,22 +213,24 @@ export function healthStep(s, { log, random, decision }, risk) {
   if (elapsed >= 5 && e.stage === 'care') {
     // Everyday illnesses and injuries mostly heal with care (game assumption).
     // A wound heals more often than an illness, and a dog living with people is usually
-    // noticed limping in the end even if no one took it to a vet.
+    // noticed limping or not eating in the end even if no one took it to a vet at first.
     const recoverChance =
       e.kind === 'injury'
         ? e.treated
-          ? 0.98
+          ? 0.99
           : e.supported
             ? 0.92
             : s.home === 'street'
               ? 0.45
               : 0.75
         : e.treated
-          ? 0.95
+          ? 0.985
           : e.supported
-            ? 0.8
-            : 0.45;
-    e.recovering = random(s) < recoverChance;
+            ? 0.85
+            : s.home === 'family'
+              ? 0.75
+              : 0.45;
+    e.recovering = (dayMix(s, 2905) % 10000) / 10000 < recoverChance;
     e.stage = e.recovering ? 'recovering' : 'critical';
     e.critical = !e.recovering;
     log(

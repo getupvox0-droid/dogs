@@ -43,16 +43,22 @@ test('caregiver detects symptoms, visits vet and dog recovers with a recorded hi
     assert.ok(s.log.some((e) => e.id === id));
 });
 test('fatal illness has prior symptoms, failed treatment, deterioration and explicit cause', () => {
-  const { s, api } = setup('family', 0.99);
-  beginIllness(s, api, 'respiratory');
-  run(s, api);
+  // Treatment fails for about 1 in 70; the roll is a hash of the day, so look for such a day.
+  let s, api;
+  for (let start = 100; start < 5000; start++) {
+    ({ s, api } = setup('family', 0.99));
+    s.day = start;
+    beginIllness(s, api, 'respiratory');
+    run(s, api);
+    if (!s.alive) break;
+  }
   assert.equal(s.alive, false);
   assert.match(s.cause, /호흡기 질환.*치료에도/);
   const ids = s.log.map((e) => e.id);
   assert.ok(ids.indexOf('illness-onset') < ids.indexOf('vet-visit'));
   assert.ok(ids.indexOf('illness-worsening') < ids.indexOf('death'));
   assert.ok(ids.indexOf('illness-final-care') < ids.indexOf('death'));
-  assert.equal(s.log.at(-1).day - 100, 10);
+  assert.equal(s.log.at(-1).day - s.medical.history.at(-1).start, 10);
 });
 test('lost dog has no automatic family hospital access', () => {
   const { s, api } = setup('street', 0.99);
@@ -114,4 +120,16 @@ test('malformed health imports rejected, old completed lives retain original unk
   s.alive = false;
   s.cause = '건강·환경 위험에 따른 생애 종료 (사인은 모델링하지 않음)';
   assert.equal(restore(serialize(s)).cause, s.cause);
+});
+test('a wound is noticed at home even when the dog hides, and the question names that wound', () => {
+  const { s, api } = setup('family');
+  beginIllness(s, api, 'injury', '베인 발바닥이 쓰라려 디딜 때마다 다리를 든다.');
+  s.day++;
+  healthStep(s, api, 0);
+  assert.match(s.pending.text, /^베인 발바닥/);
+  healthChoice(s, 'rest', api.log);
+  s.pending = null;
+  s.day++;
+  healthStep(s, api, 0);
+  assert.ok(s.medical.episode.supported);
 });

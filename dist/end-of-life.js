@@ -16,6 +16,8 @@ export const END_SOURCE = {
 };
 // share: % of recorded deaths (euthanased × 0.915 + unassisted × 0.085, from Table 2).
 // young / old: game multipliers for under 3 years and 10 years and over.
+// last: the part of the share left to last illnesses, where everyday illnesses that fail to heal
+// (health.js) already reach the rest (measured with scripts/measure-lifespan.mjs).
 export const END_CAUSES = {
   cancer: { share: 18.7, young: 0.2, old: 1.2, days: [30, 90] },
   decline: { share: 16.0, young: 0, old: 1.6, days: [14, 45], from: 8 },
@@ -23,8 +25,8 @@ export const END_CAUSES = {
   brain: { share: 7.1, young: 0.8, old: 1, days: [3, 20] },
   behaviour: { share: 6.7, young: 2, old: 0.2, days: [10, 30] },
   heart: { share: 5.9, young: 0.4, old: 1.1, days: [20, 60] },
-  respiratory: { share: 5.5, young: 1, old: 1, days: [7, 20] },
-  digestive: { share: 3.8, young: 3, old: 0.8, days: [7, 20] },
+  respiratory: { share: 5.5, last: 2.5, young: 1, old: 1, days: [7, 20] },
+  digestive: { share: 3.8, last: 1.5, young: 3, old: 0.8, days: [7, 20] },
   kidney: { share: 3.2, young: 0.4, old: 1.2, days: [30, 60] },
   trauma: { share: 2.5, young: 4, old: 0.5, days: [1, 3] },
 };
@@ -38,7 +40,9 @@ export function endCause(s, roll) {
         (k !== 'behaviour' || (s.home !== 'street' && years >= 0.5 && years < 8)) &&
         (k !== 'decline' || years >= END_CAUSES.decline.from),
     ),
-    w = entries.map(([, c]) => c.share * (years < 3 ? c.young : years >= 10 ? c.old : 1));
+    w = entries.map(
+      ([, c]) => (c.last ?? c.share) * (years < 3 ? c.young : years >= 10 ? c.old : 1),
+    );
   let r = roll * w.reduce((a, b) => a + b, 0);
   for (let i = 0; i < entries.length; i++) {
     if (r < w[i]) return entries[i][0];
