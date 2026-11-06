@@ -18,7 +18,7 @@ export const END_SOURCE = {
 // young / old: game multipliers for under 3 years and 10 years and over.
 export const END_CAUSES = {
   cancer: { share: 18.7, young: 0.2, old: 1.2, days: [30, 90] },
-  decline: { share: 16.0, young: 0.1, old: 1.6, days: [14, 45] },
+  decline: { share: 16.0, young: 0, old: 1.6, days: [14, 45], from: 8 },
   joint: { share: 8.8, young: 0.4, old: 1.1, days: [30, 90] },
   brain: { share: 7.1, young: 0.8, old: 1, days: [3, 20] },
   behaviour: { share: 6.7, young: 2, old: 0.2, days: [10, 30] },
@@ -32,8 +32,11 @@ export const END_CAUSES = {
 export function endCause(s, roll) {
   const years = s.day / 365,
     // Behaviour is a reason people give a dog up to be put to sleep; it needs people.
+    // Decline is the 'old age' of the records; a younger dog's last illness has another name.
     entries = Object.entries(END_CAUSES).filter(
-      ([k]) => k !== 'behaviour' || (s.home !== 'street' && years >= 0.5 && years < 8),
+      ([k]) =>
+        (k !== 'behaviour' || (s.home !== 'street' && years >= 0.5 && years < 8)) &&
+        (k !== 'decline' || years >= END_CAUSES.decline.from),
     ),
     w = entries.map(([, c]) => c.share * (years < 3 ? c.young : years >= 10 ? c.old : 1));
   let r = roll * w.reduce((a, b) => a + b, 0);

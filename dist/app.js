@@ -140,7 +140,8 @@ const profileKey = 'dogs-life-profile';
 function loadProfile() {
   try {
     const p = JSON.parse(localStorage.getItem(profileKey)) || {};
-    const age = Number(p.myDog?.age);
+    // No age given stays no age (Number(null) would read as 0).
+    const age = p.myDog?.age == null ? NaN : Number(p.myDog.age);
     return {
       birthMode: p.birthMode in BIRTH_MODES ? p.birthMode : 'explore',
       // The player's own country for "내 나라에서"; guessed from the browser until they pick one.

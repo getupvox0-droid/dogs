@@ -58,3 +58,13 @@ test('young dogs end by behaviour, gut or accidents; old dogs by tumours and dec
   assert.equal(street.behaviour, undefined);
   assert.equal(Object.keys(END_CAUSES).length, 10);
 });
+
+test('old-age decline is never the cause before eight years', () => {
+  for (const years of [0.5, 2, 4, 6, 7.9])
+    for (let r = 0; r < 1; r += 0.01)
+      assert.notEqual(endCause({ day: years * 365, home: 'family' }, r), 'decline', `${years}y`);
+  let seen = 0;
+  for (let r = 0; r < 1; r += 0.01)
+    seen += endCause({ day: 9 * 365, home: 'family' }, r) === 'decline';
+  assert.ok(seen > 5);
+});
